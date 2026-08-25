@@ -54,6 +54,7 @@ export function useTabBarCreateMenuController({
   onNewTerminalTab,
   onNewTerminalWithShell,
   onNewBrowserTab,
+  onNewCodeServerTab,
   onNewSimulatorTab,
   onNewFileTab,
   onOpenFileTab
@@ -76,6 +77,7 @@ export function useTabBarCreateMenuController({
   onNewTerminalTab: () => void
   onNewTerminalWithShell?: (shell: string) => void
   onNewBrowserTab: () => void
+  onNewCodeServerTab?: () => void
   onNewSimulatorTab?: () => void
   onNewFileTab?: () => void
   onOpenFileTab?: () => void
@@ -160,6 +162,8 @@ export function useTabBarCreateMenuController({
         terminalOnly,
         windowsShellEntries,
         hasNewBrowser: !terminalOnly && managedBrowserCreationEnabled,
+        hasNewCodeServer:
+          !terminalOnly && managedBrowserCreationEnabled && Boolean(onNewCodeServerTab),
         hasNewMarkdown: !terminalOnly && Boolean(onNewFileTab),
         hasOpenMarkdown: !terminalOnly && Boolean(onOpenFileTab),
         hasSimulator:
@@ -202,6 +206,9 @@ export function useTabBarCreateMenuController({
         break
       case 'new-browser':
         onNewBrowserTab()
+        break
+      case 'new-code-server':
+        onNewCodeServerTab?.()
         break
       case 'new-markdown':
         onNewFileTab?.()

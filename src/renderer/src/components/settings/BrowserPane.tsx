@@ -3,6 +3,8 @@ import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import { useAppStore } from '../../store'
 import { matchesSettingsSearch } from './settings-search'
 import { getBrowserPaneSearchEntries } from './browser-search'
+import { CodeServerUrlSetting } from './CodeServerUrlSetting'
+import { DEFAULT_CODE_SERVER_URL } from '../../../../shared/code-server-url'
 import { getBrowserLinkRoutingDescription } from './browser-link-routing-copy'
 import { getBrowserUsePaneSearchEntries } from './browser-use-search'
 import { getBrowserPaneCombinedSearchEntries } from './browser-pane-search'
@@ -52,6 +54,8 @@ export function BrowserPane({
   const searchQuery = useAppStore((s) => s.settingsSearchQuery)
   const browserDefaultUrl = useAppStore((s) => s.browserDefaultUrl)
   const setBrowserDefaultUrl = useAppStore((s) => s.setBrowserDefaultUrl)
+  const codeServerUrl = useAppStore((s) => s.codeServerUrl)
+  const setCodeServerUrl = useAppStore((s) => s.setCodeServerUrl)
   const browserDefaultSearchEngine = useAppStore((s) => s.browserDefaultSearchEngine)
   const setBrowserDefaultSearchEngine = useAppStore((s) => s.setBrowserDefaultSearchEngine)
   const browserDefaultZoomLevel = useAppStore((s) => s.browserDefaultZoomLevel)
@@ -75,6 +79,7 @@ export function BrowserPane({
     createBrowserHomePageDraftState(persistedHomePageDraft)
   )
   const [newProfileDialogOpen, setNewProfileDialogOpen] = useState(false)
+  const [codeServerUrlDraft, setCodeServerUrlDraft] = useState(() => codeServerUrl ?? '')
   const sessionCookieScrollFrameIdsRef = useRef<number[]>([])
   const resolvedHomePageDraftState = resolveBrowserHomePageDraftState(
     homePageDraftState,
@@ -224,6 +229,16 @@ export function BrowserPane({
           }}
         />
       ) : null}
+
+      <CodeServerUrlSetting
+        value={codeServerUrlDraft}
+        placeholder={DEFAULT_CODE_SERVER_URL}
+        onChange={setCodeServerUrlDraft}
+        onSave={(url) => {
+          setCodeServerUrl(url)
+          setCodeServerUrlDraft(url ?? '')
+        }}
+      />
 
       {showSearchEngine ? (
         <BrowserSearchEngineSetting

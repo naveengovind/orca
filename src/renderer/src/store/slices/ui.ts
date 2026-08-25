@@ -1022,6 +1022,8 @@ export type UISlice = {
   /** URL opened when a new browser tab is created. Null = blank tab (default). */
   browserDefaultUrl: string | null
   setBrowserDefaultUrl: (url: string | null) => void
+  codeServerUrl: string | null
+  setCodeServerUrl: (url: string | null) => void
   browserDefaultSearchEngine: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null
   setBrowserDefaultSearchEngine: (engine: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null) => void
   browserDefaultZoomLevel: number
@@ -2589,6 +2591,7 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (set, get)
         updateReassuranceSeen: ui.updateReassuranceSeen ?? false,
         osc52ClipboardDefaultOnNoticePending: ui.osc52ClipboardDefaultOnNoticePending === true,
         browserDefaultUrl: ui.browserDefaultUrl ?? null,
+        codeServerUrl: ui.codeServerUrl ?? null,
         browserDefaultSearchEngine: ui.browserDefaultSearchEngine ?? null,
         browserDefaultZoomLevel: normalizeBrowserPageZoomLevel(ui.browserDefaultZoomLevel),
         browserKagiSessionLink: normalizeKagiSessionLink(ui.browserKagiSessionLink ?? ''),
@@ -2730,6 +2733,11 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (set, get)
   setBrowserDefaultUrl: (url) => {
     void window.api.ui.set({ browserDefaultUrl: url }).catch(console.error)
     set({ browserDefaultUrl: url })
+  },
+  codeServerUrl: null,
+  setCodeServerUrl: (url) => {
+    void window.api.ui.set({ codeServerUrl: url }).catch(console.error)
+    set({ codeServerUrl: url })
   },
   browserDefaultSearchEngine: null,
   setBrowserDefaultSearchEngine: (engine) => {

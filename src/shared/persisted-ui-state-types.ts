@@ -141,6 +141,7 @@ export type PersistedUIState = {
   usageEmptyStateDismissed?: boolean
   /** URL for new browser tabs; null = blank tab. */
   browserDefaultUrl?: string | null
+  codeServerUrl?: string | null
   browserDefaultSearchEngine?: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null
   /** Electron browser zoom level applied when a new local browser tab is created. */
   browserDefaultZoomLevel?: number

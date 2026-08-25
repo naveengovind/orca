@@ -6,6 +6,7 @@ import { isClipboardTextByteLengthOverLimit } from '../../../../shared/clipboard
 export type TabCreateMenuOptionKind =
   | 'go-to-simulator'
   | 'new-browser'
+  | 'new-code-server'
   | 'new-markdown'
   | 'new-simulator'
   | 'new-terminal'
@@ -22,6 +23,7 @@ export type TabCreateMenuOption = {
 
 export type TabCreateMenuOptionsContext = {
   hasNewBrowser: boolean
+  hasNewCodeServer: boolean
   hasNewMarkdown: boolean
   hasOpenMarkdown: boolean
   hasSimulator: boolean
@@ -110,6 +112,28 @@ export function buildTabCreateMenuOptions(
         translate('auto.components.tab.bar.tab.create.menu.options.6d0e6a4b7a', 'new browser'),
         translate('auto.components.tab.bar.tab.create.menu.options.c87ad57785', 'browser tab'),
         translate('auto.components.tab.bar.tab.create.menu.options.cce7ef1d2c', 'web')
+      ]
+    })
+  }
+
+  if (context.hasNewCodeServer) {
+    const label = translate('auto.components.tab.bar.TabBar.newCodeServerTab', 'New Code Server')
+    options.push({
+      id: 'new-code-server',
+      kind: 'new-code-server',
+      label,
+      keywords: [
+        translate(
+          'auto.components.tab.bar.tab.create.menu.options.newCodeServerKw1',
+          'code server'
+        ),
+        translate(
+          'auto.components.tab.bar.tab.create.menu.options.newCodeServerKw2',
+          'code-server'
+        ),
+        translate('auto.components.tab.bar.tab.create.menu.options.newCodeServerKw3', 'vscode'),
+        translate('auto.components.tab.bar.tab.create.menu.options.newCodeServerKw4', 'editor'),
+        translate('auto.components.tab.bar.tab.create.menu.options.newCodeServerKw5', 'review')
       ]
     })
   }

@@ -133,6 +133,18 @@ describe('openCodeServerTabInActiveWorkspace', () => {
     ).toBeNull()
   })
 
+  it('honors the configured code-server URL setting', async () => {
+    const store = createTestStore()
+    seedActiveWorktreePath(store)
+    store.setState({ codeServerUrl: 'https://dev-box.tailnet.ts.net:13337/' })
+
+    await store.getState().openCodeServerTabInActiveWorkspace()
+
+    expect(store.getState().browserTabsByWorktree['wt-1']?.[0]?.url).toBe(
+      'https://dev-box.tailnet.ts.net:13337/?folder=/repo/wt-1'
+    )
+  })
+
   it('rejects when no worktree path is known for the active worktree', async () => {
     const store = createTestStore()
 

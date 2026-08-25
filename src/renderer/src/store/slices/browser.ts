@@ -17,6 +17,7 @@ import type { WorkspaceSessionState } from '../../../../shared/workspace-session
 import { GRAB_BUDGET, type BrowserPageAnnotation } from '../../../../shared/browser-grab-types'
 import { FLOATING_TERMINAL_WORKTREE_ID, ORCA_BROWSER_BLANK_URL } from '../../../../shared/constants'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
+import { DEFAULT_CODE_SERVER_URL } from '../../../../shared/code-server-url'
 import { redactKagiSessionToken } from '../../../../shared/browser-url'
 import {
   MAX_BROWSER_HISTORY_ENTRIES,
@@ -65,11 +66,6 @@ import {
   assertManagedBrowserMaterializationAllowed,
   getClientCreationActionPolicy
 } from '@/lib/client-creation-action-policy'
-
-// Where the user's code-server serves (see the cs/csv shell helpers). Client-
-// local webviews load it directly; remote worktrees rely on the user's port
-// forward of 13337.
-const CODE_SERVER_BASE_URL = 'http://127.0.0.1:13337'
 
 type CreateBrowserTabOptions = {
   activate?: boolean
@@ -815,7 +811,9 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
     // createBrowserTab's own guard still refuses web-client windows, which
     // cannot host local webviews at all.
     const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
-    get().createBrowserTab(worktreeId, `${CODE_SERVER_BASE_URL}/?folder=${worktreePath}`, {
+    const codeServerBaseUrl =
+      (state.codeServerUrl ?? '').trim().replace(/\/+$/, '') || DEFAULT_CODE_SERVER_URL
+    get().createBrowserTab(worktreeId, `${codeServerBaseUrl}/?folder=${worktreePath}`, {
       title: translate('auto.store.slices.browser.codeServerTabTitle', 'code-server'),
       activate: true,
       chromeless: true,
