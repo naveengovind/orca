@@ -124,7 +124,9 @@ function getBaseVersionManagerDirectories(platform: NodeJS.Platform, homePath: s
 // Why bounded and cycle-guarded: an nvm alias may point at another alias
 // (`default` -> `lts/*` -> `lts/krypton` -> a version), and a hand-edited pair
 // can point at each other. nvm's own resolver tracks seen aliases; mirror that
-// rather than trusting the files to be acyclic.
+// rather than trusting the files to be acyclic. Termination comes from the hop
+// bound; the seen-set is what turns a cycle into "no preference" instead of
+// silently resolving whichever alias the walk happened to stop on.
 const NVM_ALIAS_CHAIN_LIMIT = 10
 
 /** Resolves `alias/default` to an installed version directory name, or null. */
@@ -143,7 +145,7 @@ function resolveNvmDefaultVersion(nvmVersionsDir: string, installed: string[]): 
     }
     token = next
   }
-  if (!token || seen.size > NVM_ALIAS_CHAIN_LIMIT) {
+  if (!token) {
     return null
   }
   // Why: `system` selects the OS node, so nvm owns nothing to prefer here.
@@ -176,13 +178,17 @@ function readNvmAlias(aliasPath: string): string | null {
 
 /** `24` matches the highest installed `v24.x.y`; `v24.18.0` matches exactly. */
 function matchNvmVersion(token: string, installed: string[]): string | null {
-  // Why a shape check and not a length check: parseVersionSegment coerces every
-  // unparseable segment to 0, so an unresolvable token like `garbage` or
-  // `lts/nonexistent` became [0] and prefix-matched `v0.12.x` — or any stray
-  // non-version directory — instead of matching nothing. (A length check cannot
-  // catch it: ''.split('.') is [''], never empty.) Real nvm answers N/A here,
-  // and so must we, which leaves the newest-first ordering untouched.
-  if (!/^v?\d/.test(token)) {
+  // Why a full shape check: parseVersionSegment coerces every unparseable
+  // segment to 0 (parseInt stops at the first non-digit), so an unresolvable
+  // token prefix-matched `v0.12.x` — or any stray non-version directory —
+  // instead of matching nothing. Anchoring only the first character was not
+  // enough: `0x18`, `00` and `0abc` all still parsed to [0]. nvm writes such a
+  // token to the alias file even while warning it does not exist, then answers
+  // N/A for it, and so must we — which leaves newest-first ordering untouched.
+  // Leading zeros are rejected for the same reason: nvm calls `00` and `024`
+  // N/A, while parseInt happily reads them as 0 and 24.
+  // (A length check cannot catch any of this: ''.split('.') is [''].)
+  if (!/^v?(0|[1-9]\d*)(\.(0|[1-9]\d*))*$/.test(token)) {
     return null
   }
   const wanted = parseVersionSegment(token)

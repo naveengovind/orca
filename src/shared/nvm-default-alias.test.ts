@@ -102,19 +102,32 @@ describe('nvm default alias decides the seeded runtime', () => {
     expect(seededNvmDir(home)).toBe(join(home, '.nvm', 'versions', 'node', 'v26.7.0', 'bin'))
   })
 
-  it.each(['garbage', 'iojs', 'lts/nonexistent', 'my-custom-alias'])(
-    'treats the unresolvable default %s as no preference, like nvm N/A',
-    (token) => {
-      // Why v0.12.7 is in the fixture: parseVersionSegment coerces unparseable
-      // segments to 0, so before the shape guard these tokens became [0] and
-      // prefix-matched the 0.x install — seeding a decade-old node.
-      const home = makeNvmHome({
-        versions: ['v0.12.7', 'v24.18.0', 'v26.7.0'],
-        defaultAlias: token
-      })
-      expect(seededNvmDir(home)).toBe(join(home, '.nvm', 'versions', 'node', 'v26.7.0', 'bin'))
-    }
-  )
+  // Why the digit-leading entries: parseInt stops at the first non-digit, so
+  // anchoring only the first character still let `0x18` and `00` parse to 0 and
+  // prefix-match a decade-old v0.x. nvm writes such a token to the alias file
+  // even while warning it does not exist, then answers N/A for it.
+  it.each([
+    'garbage',
+    'iojs',
+    'lts/nonexistent',
+    'my-custom-alias',
+    '0x18',
+    '00',
+    '0abc',
+    '024',
+    '24abc',
+    'v24.18.0-nightly',
+    'V24'
+  ])('treats the unresolvable default %s as no preference, like nvm N/A', (token) => {
+    // Why v0.12.7 is in the fixture: parseVersionSegment coerces unparseable
+    // segments to 0, so before the shape guard these tokens became [0] and
+    // prefix-matched the 0.x install — seeding a decade-old node.
+    const home = makeNvmHome({
+      versions: ['v0.12.7', 'v24.18.0', 'v26.7.0'],
+      defaultAlias: token
+    })
+    expect(seededNvmDir(home)).toBe(join(home, '.nvm', 'versions', 'node', 'v26.7.0', 'bin'))
+  })
 
   it('still treats a numeric default as a version prefix, matching nvm', () => {
     // The guard must reject non-versions without rejecting legitimate prefixes:
