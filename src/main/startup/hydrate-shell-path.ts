@@ -48,7 +48,8 @@ let probeQueue = Promise.resolve()
 // the seeded version rather than reporting what the user's shell really
 // resolves. The seed now prefers the `default` alias, but still falls back to
 // newest-first when default resolution yields nothing (no alias, `system`,
-// uninstalled target, cycle), so the probe must stay insulated from it. Snapshot PATH here instead: module init runs while the import graph is
+// uninstalled target, cycle), so the probe must stay insulated from it.
+// Snapshot PATH here instead: module init runs while the import graph is
 // evaluated, strictly before any statement in main's body, so it cannot observe the
 // seeds — and unlike an explicit hand-off from the seeding site, there is no call
 // ordering left for a later refactor to break. Windows keys it `Path`, and a Git Bash

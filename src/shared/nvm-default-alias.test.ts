@@ -68,15 +68,22 @@ describe('nvm default alias decides the seeded runtime', () => {
     expect(seededNvmDir(home)).toBe(join(home, '.nvm', 'versions', 'node', 'v24.18.0', 'bin'))
   })
 
-  it('follows an alias chain (default -> lts/* -> lts/krypton -> version)', () => {
-    const home = makeNvmHome({
-      versions: ['v22.9.0', 'v26.7.0'],
-      defaultAlias: 'lts/*',
-      aliases: { 'lts/*': 'lts/krypton', 'lts/krypton': 'v22.9.0' },
-      cliIn: 'v22.9.0'
-    })
-    expect(seededNvmDir(home)).toBe(join(home, '.nvm', 'versions', 'node', 'v22.9.0', 'bin'))
-  })
+  // Why skipIf rather than renaming the fixture: `lts/*` is the real alias nvm
+  // ships, and `*` is a reserved Win32 filename character, so the fixture cannot
+  // be materialized there. Keeping the real name is worth more than the case
+  // running on a platform where seededNvmDir already pins platform: 'darwin'.
+  it.skipIf(process.platform === 'win32')(
+    'follows an alias chain (default -> lts/* -> lts/krypton -> version)',
+    () => {
+      const home = makeNvmHome({
+        versions: ['v22.9.0', 'v26.7.0'],
+        defaultAlias: 'lts/*',
+        aliases: { 'lts/*': 'lts/krypton', 'lts/krypton': 'v22.9.0' },
+        cliIn: 'v22.9.0'
+      })
+      expect(seededNvmDir(home)).toBe(join(home, '.nvm', 'versions', 'node', 'v22.9.0', 'bin'))
+    }
+  )
 
   it('falls back to newest when there is no default alias', () => {
     const home = makeNvmHome({ versions: ['v24.18.0', 'v26.7.0'] })
