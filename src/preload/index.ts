@@ -2710,6 +2710,9 @@ const api = {
     unregisterGuest: (args: { browserPageId: string }): Promise<void> =>
       ipcRenderer.invoke('browser:unregisterGuest', args),
 
+    setChromeless: (args: { browserPageId: string; chromeless: boolean }): Promise<boolean> =>
+      ipcRenderer.invoke('browser:setChromeless', args),
+
     onWebAuthnAccountRequest: (
       callback: (request: BrowserWebAuthnAccountRequest) => void
     ): (() => void) => {

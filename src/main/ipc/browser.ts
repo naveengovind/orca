@@ -41,6 +41,7 @@ export function registerBrowserHandlers(): void {
   ipcMain.removeHandler('browser:registerGuest')
   ipcMain.removeHandler('browser:isGuestRegistered')
   ipcMain.removeHandler('browser:repairGuestRegistration')
+  ipcMain.removeHandler('browser:setChromeless')
   ipcMain.removeHandler('browser:unregisterGuest')
   ipcMain.removeHandler('browser:activeTabChanged')
   ipcMain.removeHandler('browser:proceedCertificate')
@@ -118,6 +119,21 @@ export function registerBrowserHandlers(): void {
         browserManager.getGuestWebContentsId(args.browserPageId) === args.webContentsId &&
         isLiveBrowserWebContentsId(args.webContentsId)
       )
+    }
+  )
+
+  ipcMain.handle(
+    'browser:setChromeless',
+    (event, args: { browserPageId?: unknown; chromeless?: unknown }): boolean => {
+      if (
+        !isTrustedBrowserRenderer(event.sender) ||
+        typeof args?.browserPageId !== 'string' ||
+        typeof args.chromeless !== 'boolean'
+      ) {
+        return false
+      }
+      browserManager.setGuestChromeless(args.browserPageId, args.chromeless)
+      return true
     }
   )
 

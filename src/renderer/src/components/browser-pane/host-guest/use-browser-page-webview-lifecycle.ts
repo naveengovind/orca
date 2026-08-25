@@ -132,6 +132,7 @@ export function useBrowserPageWebviewLifecycle({
   const addBrowserHistoryEntryRef = useRef(addBrowserHistoryEntry)
   const createBrowserTab = useAppStore((s) => s.createBrowserTab)
   const isPaintableRef = useRef(isPaintable)
+  const chromelessRef = useRef(chromeless)
   const annotationViewportBridgeTokenRef = useRef(createBrowserUuid().replaceAll('-', ''))
   const isActiveRef = useRef(isActive)
   const pendingAnnotationPayloadRef = useRef(pendingAnnotationPayload)
@@ -150,8 +151,10 @@ export function useBrowserPageWebviewLifecycle({
     browserAnnotationsRef.current = browserAnnotations
     clearBrowserPageAnnotationsRef.current = clearBrowserPageAnnotations
     isPaintableRef.current = isPaintable
+    chromelessRef.current = chromeless
   }, [
     browserAnnotations,
+    chromeless,
     clearBrowserPageAnnotations,
     inputLocked,
     isActive,
@@ -159,6 +162,13 @@ export function useBrowserPageWebviewLifecycle({
     pendingAnnotationPayload,
     viewportPresetId
   ])
+
+  // Why: the chromeless flag can hydrate AFTER the guest attaches (restored
+  // sessions), and the attach effect deliberately doesn't re-run; re-assert it
+  // so the main process releases the full keyboard to the page.
+  useEffect(() => {
+    void window.api.browser.setChromeless({ browserPageId: browserTabId, chromeless })
+  }, [browserTabId, chromeless])
 
   useLayoutEffect(() => {
     const webview = webviewRef.current
@@ -235,7 +245,7 @@ export function useBrowserPageWebviewLifecycle({
       browserTabUrl,
       workspaceId,
       worktreeId,
-      chromeless,
+      chromelessRef,
       sessionProfileId,
       webviewPartition,
       isActive,

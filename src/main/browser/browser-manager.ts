@@ -1243,6 +1243,16 @@ export class BrowserManager {
     this.cancelPendingDownloadsForGuest(guestWebContentsId)
   }
 
+  // Why: the renderer's chromeless flag can hydrate after guest registration
+  // (restored sessions); this lets it re-assert without re-registering.
+  setGuestChromeless(browserTabId: string, chromeless: boolean): void {
+    if (chromeless) {
+      this.chromelessByPageId.add(browserTabId)
+    } else {
+      this.chromelessByPageId.delete(browserTabId)
+    }
+  }
+
   registerGuest({
     browserPageId,
     browserTabId: legacyBrowserTabId,

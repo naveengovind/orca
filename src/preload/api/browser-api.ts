@@ -54,6 +54,7 @@ export type BrowserApi = {
     webContentsId: number
   }) => Promise<boolean>
   unregisterGuest: (args: { browserPageId: string }) => Promise<void>
+  setChromeless: (args: { browserPageId: string; chromeless: boolean }) => Promise<boolean>
   onWebAuthnAccountRequest: (
     callback: (request: BrowserWebAuthnAccountRequest) => void
   ) => () => void
