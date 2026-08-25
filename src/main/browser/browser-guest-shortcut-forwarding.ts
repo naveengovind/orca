@@ -31,6 +31,7 @@ export function setupGuestShortcutForwarding(args: {
   // Why: a floating-panel guest owns a distinct workspace; its close/index chords must route to the panel, not the main tab strip.
   resolveWorktreeId?: (browserTabId: string) => string | null
   resolveWorkspaceId?: (browserTabId: string) => string | null
+  isChromelessGuest?: (browserTabId: string) => boolean
 }): () => void {
   const {
     browserTabId,
@@ -40,7 +41,8 @@ export function setupGuestShortcutForwarding(args: {
     isMobileEmulatorEnabled,
     getKeybindings,
     resolveWorktreeId,
-    resolveWorkspaceId
+    resolveWorkspaceId,
+    isChromelessGuest
   } = args
   let ctrlTabSwitching = false
   const doubleTapDetector = new ModifierDoubleTapDetector()
@@ -63,6 +65,7 @@ export function setupGuestShortcutForwarding(args: {
     getKeybindings,
     resolveWorktreeId,
     resolveWorkspaceId,
+    isChromelessGuest,
     forwardBrowserPageZoom
   }
 

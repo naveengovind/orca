@@ -138,6 +138,9 @@ export type BrowserGuestRegistration = {
   worktreeId?: string
   sessionProfileId?: string | null
   userAgentMode?: BrowserSessionUserAgentMode
+  // Chromeless guests keep browser-chrome chords (find, close, reload, nav)
+  // for the page instead of Orca (embedded tool UIs like code-server).
+  chromeless?: boolean
   webContentsId: number
   rendererWebContentsId: number
 }
@@ -232,6 +235,7 @@ export class BrowserManager {
   private readonly workspaceIdByPageId = new Map<string, string>()
   private readonly sessionProfileIdByPageId = new Map<string, string | null>()
   private readonly userAgentModeByPageId = new Map<string, BrowserSessionUserAgentMode>()
+  private readonly chromelessByPageId = new Set<string>()
   private readonly rendererWebContentsIdByTabId = new Map<string, number>()
   // Why: serialize per-tab setViewportOverride so rapid toggles don't interleave CDP commands and leave emulation in a wrong state.
   private readonly viewportOpsByTabId = new Map<string, Promise<unknown>>()
@@ -1246,6 +1250,7 @@ export class BrowserManager {
     worktreeId,
     sessionProfileId,
     userAgentMode,
+    chromeless,
     webContentsId,
     rendererWebContentsId
   }: BrowserGuestRegistration): boolean {
@@ -1290,6 +1295,11 @@ export class BrowserManager {
       this.userAgentModeByPageId.set(browserTabId, userAgentMode)
     } else {
       this.userAgentModeByPageId.delete(browserTabId)
+    }
+    if (chromeless) {
+      this.chromelessByPageId.add(browserTabId)
+    } else {
+      this.chromelessByPageId.delete(browserTabId)
     }
     this.rendererWebContentsIdByTabId.set(browserTabId, rendererWebContentsId)
     if (worktreeId) {
@@ -1353,6 +1363,7 @@ export class BrowserManager {
     this.workspaceIdByPageId.delete(browserTabId)
     this.sessionProfileIdByPageId.delete(browserTabId)
     this.userAgentModeByPageId.delete(browserTabId)
+    this.chromelessByPageId.delete(browserTabId)
     this.worktreeIdByTabId.delete(browserTabId)
     // Why: drop the viewport-op chain so the Map doesn't retain a promise keyed to a destroyed guest.
     this.viewportOpsByTabId.delete(browserTabId)
@@ -2026,7 +2037,8 @@ export class BrowserManager {
         isMobileEmulatorEnabled: () => this.settingsResolver?.().mobileEmulatorEnabled !== false,
         getKeybindings: () => this.settingsResolver?.().keybindings,
         resolveWorktreeId: (tabId) => this.worktreeIdByTabId.get(tabId) ?? null,
-        resolveWorkspaceId: (tabId) => this.workspaceIdByPageId.get(tabId) ?? null
+        resolveWorkspaceId: (tabId) => this.workspaceIdByPageId.get(tabId) ?? null,
+        isChromelessGuest: (tabId) => this.chromelessByPageId.has(tabId)
       })
     )
   }

@@ -28,6 +28,7 @@ type BrowserGuestRegistrationArgs = {
   workspaceId: string
   worktreeId: string
   sessionProfileId?: string | null
+  chromeless?: boolean
   webContentsId: number
 }
 

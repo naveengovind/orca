@@ -28,6 +28,7 @@ export type BrowserPageWebviewGuestSessionArgs = {
   workspaceId: string
   worktreeId: string
   sessionProfileId: string | null
+  chromeless: boolean
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   isPaintableRef: MutableRefObject<boolean>
   guestRecoveryPendingRef: MutableRefObject<boolean>
@@ -59,6 +60,7 @@ export function createBrowserPageWebviewGuestSession({
   workspaceId,
   worktreeId,
   sessionProfileId,
+  chromeless,
   webviewRef,
   isPaintableRef,
   guestRecoveryPendingRef,
@@ -96,6 +98,7 @@ export function createBrowserPageWebviewGuestSession({
         workspaceId,
         worktreeId,
         sessionProfileId,
+        chromeless,
         webContentsId
       })
       .then((registered) => {
@@ -156,6 +159,7 @@ export function createBrowserPageWebviewGuestSession({
         workspaceId,
         worktreeId,
         sessionProfileId,
+        chromeless,
         webContentsId
       })
     },

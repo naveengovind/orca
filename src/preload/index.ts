@@ -2680,6 +2680,7 @@ const api = {
       workspaceId: string
       worktreeId: string
       sessionProfileId?: string | null
+      chromeless?: boolean
       webContentsId: number
     }): Promise<boolean> => ipcRenderer.invoke('browser:registerGuest', args),
 
@@ -2691,6 +2692,7 @@ const api = {
       workspaceId: string
       worktreeId: string
       sessionProfileId?: string | null
+      chromeless?: boolean
       webContentsId: number
     }): Promise<boolean> => ipcRenderer.invoke('browser:repairGuestRegistration', args),
 

@@ -37,6 +37,7 @@ export function useBrowserPageWebviewLifecycle({
   workspaceId,
   worktreeId,
   sessionProfileId,
+  chromeless,
   webviewPartition,
   isActive,
   isPaintable,
@@ -78,6 +79,9 @@ export function useBrowserPageWebviewLifecycle({
   workspaceId: string
   worktreeId: string
   sessionProfileId: string | null
+  // Chromeless guests keep browser-chrome chords (find, close, reload, nav)
+  // for the page instead of Orca.
+  chromeless: boolean
   webviewPartition: string
   isActive: boolean
   isPaintable: boolean
@@ -231,6 +235,7 @@ export function useBrowserPageWebviewLifecycle({
       browserTabUrl,
       workspaceId,
       worktreeId,
+      chromeless,
       sessionProfileId,
       webviewPartition,
       isActive,

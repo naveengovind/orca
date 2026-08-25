@@ -174,6 +174,7 @@ export function BrowserPagePane({
     workspaceId,
     worktreeId,
     sessionProfileId,
+    chromeless,
     webviewPartition,
     isActive,
     isPaintable,
