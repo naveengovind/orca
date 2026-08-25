@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createBrowserMockApi, createTestStore } from './browser-slice-test-harness'
+import type { AppState } from '../types'
+import {
+  createBrowserMockApi,
+  createTestStore,
+  runtimeStatuses
+} from './browser-slice-test-harness'
 
 const createWebRuntimeSessionBrowserTabMock = vi.hoisted(() => vi.fn())
 const runtimeEnvironmentTransportCall = vi.fn()
@@ -71,6 +76,61 @@ describe('openCodeServerTabInActiveWorkspace', () => {
     store.getState().createBrowserTab('wt-1', 'https://example.com')
 
     expect(store.getState().browserTabsByWorktree['wt-1']?.[0]?.chromeless).toBeUndefined()
+  })
+
+  it('creates a client-local chromeless tab for a paired-runtime worktree', async () => {
+    const store = createTestStore()
+    store.setState({
+      activeWorktreeId: 'wt-remote',
+      settings: { activeRuntimeEnvironmentId: null } as AppState['settings'],
+      runtimeStatusByEnvironmentId: runtimeStatuses(['browser.headless.v1']),
+      repos: [
+        {
+          id: 'repo-1',
+          path: '/repo',
+          displayName: 'Repo',
+          badgeColor: '#000000',
+          addedAt: 1,
+          connectionId: null,
+          executionHostId: 'runtime:env-1'
+        }
+      ],
+      worktreesByRepo: {
+        'repo-1': [
+          {
+            id: 'wt-remote',
+            repoId: 'repo-1',
+            path: '/repo/wt-remote',
+            head: 'abc123',
+            branch: 'feature',
+            isBare: false,
+            isMainWorktree: false,
+            displayName: 'Remote',
+            comment: '',
+            linkedIssue: null,
+            linkedPR: null,
+            linkedLinearIssue: null,
+            isArchived: false,
+            isUnread: false,
+            isPinned: false,
+            sortOrder: 0,
+            lastActivityAt: 1
+          }
+        ]
+      }
+    })
+
+    await store.getState().openCodeServerTabInActiveWorkspace()
+
+    expect(createWebRuntimeSessionBrowserTabMock).not.toHaveBeenCalled()
+    expect(store.getState().browserTabsByWorktree['wt-remote']?.[0]).toMatchObject({
+      url: 'http://127.0.0.1:13337/?folder=/repo/wt-remote',
+      chromeless: true
+    })
+    const workspaceId = store.getState().browserTabsByWorktree['wt-remote']?.[0]?.id ?? ''
+    expect(
+      store.getState().browserPagesByWorkspace[workspaceId]?.[0]?.browserRuntimeEnvironmentId
+    ).toBeNull()
   })
 
   it('rejects when no worktree path is known for the active worktree', async () => {

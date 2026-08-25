@@ -808,13 +808,12 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
     if (browserAvailability.state !== 'enabled') {
       throw new Error(browserAvailability.reason)
     }
-    if (browserAvailability.provider === 'paired-runtime') {
-      // Why: chromeless rendering is a client-local webview affordance; paired
-      // remote runtimes stream their own pages and cannot honor it.
-      throw new Error(
-        'code-server tabs need a client-local browser; this worktree uses a paired remote runtime.'
-      )
-    }
+    // Why: always materialize client-local (browserRuntimeEnvironmentId: null),
+    // even on paired-runtime worktrees — chromeless rendering is a local
+    // webview affordance, and streamed remote pages would defeat the point.
+    // The user's code-server port must be reachable locally (port forward).
+    // createBrowserTab's own guard still refuses web-client windows, which
+    // cannot host local webviews at all.
     const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
     get().createBrowserTab(worktreeId, `${CODE_SERVER_BASE_URL}/?folder=${worktreePath}`, {
       title: translate('auto.store.slices.browser.codeServerTabTitle', 'code-server'),
