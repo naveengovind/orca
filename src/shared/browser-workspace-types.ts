@@ -101,6 +101,10 @@ export type BrowserWorkspace = {
   canGoForward: boolean
   loadError: BrowserLoadError | null
   createdAt: number
+  // Why: chromeless workspaces render the guest page without the browser
+  // toolbar row (used for embedded tool UIs like code-server). Optional so
+  // workspaces persisted before this field existed stay chromeful.
+  chromeless?: boolean
 }
 
 export type BrowserTab = BrowserWorkspace

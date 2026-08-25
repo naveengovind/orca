@@ -1695,6 +1695,16 @@ function Terminal(): React.JSX.Element | null {
     })
   }, [activeWorktreeId, createBrowserTab, openNewBrowserTabInActiveWorkspace])
 
+  const handleNewCodeServerTab = useCallback(() => {
+    if (!activeWorktreeId) {
+      return
+    }
+    void useAppStore
+      .getState()
+      .openCodeServerTabInActiveWorkspace()
+      .catch(showClientCreationActionError)
+  }, [activeWorktreeId])
+
   const handleOpenEntry = useCallback(async (args: TabCreateEntryArgs) => {
     await openTabBarEntry(args)
   }, [])
@@ -2134,6 +2144,17 @@ function Terminal(): React.JSX.Element | null {
         return
       }
 
+      // Cmd/Ctrl+Shift+C - code-server tab (chromeless embedded editor)
+      if (!e.repeat && matchShortcut('tab.newCodeServer')) {
+        e.preventDefault()
+        notifyTerminalCapture('tab.newCodeServer')
+        if (floatingWorkspaceFocused) {
+          return
+        }
+        handleNewCodeServerTab()
+        return
+      }
+
       // Cmd/Ctrl+Shift+E — new mobile emulator tab (macOS only)
       if (!e.repeat && mobileEmulatorEnabled && matchShortcut('tab.newSimulator')) {
         e.preventDefault()
@@ -2334,6 +2355,7 @@ function Terminal(): React.JSX.Element | null {
   }, [
     activeWorktreeId,
     handleNewBrowserTab,
+    handleNewCodeServerTab,
     handleNewSimulatorTab,
     handleNewFile,
     handleNewTab,
@@ -2482,6 +2504,7 @@ function Terminal(): React.JSX.Element | null {
             onNewTerminalTab={() => handleNewTab()}
             onNewTerminalWithShell={handleNewTab}
             onNewBrowserTab={handleNewBrowserTab}
+            onNewCodeServerTab={handleNewCodeServerTab}
             onNewSimulatorTab={mobileEmulatorEnabled ? handleNewSimulatorTab : undefined}
             onOpenEntry={handleOpenEntry}
             onNewFileTab={handleNewFile}

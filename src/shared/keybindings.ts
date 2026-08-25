@@ -62,6 +62,7 @@ export type KeybindingActionId =
   | 'tab.newAgent'
   | AgentTabActionId
   | 'tab.newBrowser'
+  | 'tab.newCodeServer'
   | 'tab.newSimulator'
   | 'tab.newMarkdown'
   | 'tab.openMarkdown'
@@ -588,6 +589,14 @@ export const KEYBINDING_DEFINITIONS: readonly KeybindingDefinition[] = [
     scope: 'tabs',
     searchKeywords: ['shortcut', 'tab', 'browser', 'new'],
     defaultBindings: platformBindings(['Mod+Shift+B'])
+  },
+  {
+    id: 'tab.newCodeServer',
+    title: 'New code-server tab',
+    group: 'Tabs',
+    scope: 'tabs',
+    searchKeywords: ['shortcut', 'tab', 'code', 'server', 'code-server', 'vscode', 'editor', 'new'],
+    defaultBindings: platformBindings(['Mod+Shift+C'])
   },
   {
     id: 'tab.newSimulator',

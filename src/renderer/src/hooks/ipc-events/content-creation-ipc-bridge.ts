@@ -19,6 +19,17 @@ export function registerContentCreationIpcBridge(
   isRuntimeEnvironmentActive: () => boolean
 ): void {
   unsubs.push(
+    window.api.ui.onNewCodeServerTab(() => {
+      const store = useAppStore.getState()
+      if (isFloatingWorkspacePanelFocused()) {
+        return
+      }
+      void store.openCodeServerTabInActiveWorkspace().catch((error) => {
+        toast.error(error instanceof Error ? error.message : String(error))
+      })
+    })
+  )
+  unsubs.push(
     window.api.ui.onNewBrowserTab(() => {
       const store = useAppStore.getState()
       if (isFloatingWorkspacePanelFocused()) {

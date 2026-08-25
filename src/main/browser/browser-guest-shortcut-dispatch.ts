@@ -121,6 +121,10 @@ export function forwardGuestShortcutInput(
   const isFloatingGuest = resolveWorktreeId?.(browserTabId) === FLOATING_TERMINAL_WORKTREE_ID
   if (keybindingMatchesAction('tab.newBrowser', input, process.platform, keybindings)) {
     renderer.send('ui:newBrowserTab')
+  } else if (keybindingMatchesAction('tab.newCodeServer', input, process.platform, keybindings)) {
+    // Why: the code-server chord must work while its own guest webview is
+    // focused — that is the primary place the user presses it.
+    renderer.send('ui:newCodeServerTab')
   } else if (
     process.platform === 'darwin' &&
     (isMobileEmulatorEnabled?.() ?? true) &&

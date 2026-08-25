@@ -1,5 +1,5 @@
 import React from 'react'
-import { FilePlus, FileText, Globe, Smartphone, TerminalSquare } from 'lucide-react'
+import { FilePlus, FileText, Globe, Smartphone, SquareCode, TerminalSquare } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { DropdownMenuItem, DropdownMenuShortcut } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -26,6 +26,7 @@ export function renderTabBarStaticCreateMenu({
   pwshAvailable,
   newTerminalShortcut,
   newBrowserShortcut,
+  newCodeServerShortcut,
   newSimulatorShortcut,
   newFileShortcut,
   openMarkdownShortcut,
@@ -45,6 +46,7 @@ export function renderTabBarStaticCreateMenu({
   pwshAvailable: boolean
   newTerminalShortcut: string
   newBrowserShortcut: string
+  newCodeServerShortcut: string
   newSimulatorShortcut: string
   newFileShortcut: string
   openMarkdownShortcut: string | null
@@ -55,6 +57,7 @@ export function renderTabBarStaticCreateMenu({
     onNewTerminalTab,
     onNewTerminalWithShell,
     onNewBrowserTab,
+    onNewCodeServerTab,
     onNewSimulatorTab,
     onNewFileTab,
     onOpenFileTab
@@ -110,6 +113,17 @@ export function renderTabBarStaticCreateMenu({
         <Globe className="size-4 text-muted-foreground" />
         {translate('auto.components.tab.bar.TabBar.4833fb2cbe', 'New Browser Tab')}
         <DropdownMenuShortcut>{newBrowserShortcut}</DropdownMenuShortcut>
+      </DropdownMenuItem>
+    ) : null
+  const newCodeServerMenuItem =
+    !terminalOnly && managedBrowserCreationEnabled && onNewCodeServerTab ? (
+      <DropdownMenuItem
+        onSelect={onNewCodeServerTab}
+        className="gap-2 rounded-[7px] px-2 py-1.5 text-[12px] leading-5 font-medium"
+      >
+        <SquareCode className="size-4 text-muted-foreground" />
+        {translate('auto.components.tab.bar.TabBar.newCodeServerTab', 'New Code Server')}
+        <DropdownMenuShortcut>{newCodeServerShortcut}</DropdownMenuShortcut>
       </DropdownMenuItem>
     ) : null
   const newSimulatorMenuItem =
@@ -184,6 +198,7 @@ export function renderTabBarStaticCreateMenu({
       {openMarkdownMenuItem}
       {defaultTerminalMenuItems}
       {newBrowserMenuItem}
+      {newCodeServerMenuItem}
       {newSimulatorMenuItem}
       {mobileEmulatorIntroMenuBlock}
     </>
@@ -191,6 +206,7 @@ export function renderTabBarStaticCreateMenu({
     <>
       {defaultTerminalMenuItems}
       {newBrowserMenuItem}
+      {newCodeServerMenuItem}
       {newMarkdownMenuItem}
       {openMarkdownMenuItem}
       {newSimulatorMenuItem}

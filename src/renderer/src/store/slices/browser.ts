@@ -66,6 +66,11 @@ import {
   getClientCreationActionPolicy
 } from '@/lib/client-creation-action-policy'
 
+// Where the user's code-server serves (see the cs/csv shell helpers). Client-
+// local webviews load it directly; remote worktrees rely on the user's port
+// forward of 13337.
+const CODE_SERVER_BASE_URL = 'http://127.0.0.1:13337'
+
 type CreateBrowserTabOptions = {
   activate?: boolean
   browserPageId?: string
@@ -77,6 +82,8 @@ type CreateBrowserTabOptions = {
   // Explicit "New Tab" focuses the address bar even with a real home URL; link-opened tabs leave it unset.
   focusAddressBar?: boolean
   browserRuntimeEnvironmentId?: string | null
+  // Render the guest without the browser toolbar row (embedded tool UIs).
+  chromeless?: boolean
 }
 
 type CreateBrowserPageOptions = {
@@ -155,6 +162,7 @@ export type BrowserSlice = {
     options?: CreateBrowserTabOptions
   ) => BrowserWorkspace
   openNewBrowserTabInActiveWorkspace: (groupId: string) => Promise<void>
+  openCodeServerTabInActiveWorkspace: () => Promise<void>
   openBrowserProfileTabInActiveWorkspace: (url: string, profileId: string) => Promise<boolean>
   closeBrowserTab: (tabId: string) => void
   shutdownWorktreeBrowsers: (worktreeId: string) => Promise<void>
@@ -624,14 +632,17 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
         : (get().defaultBrowserSessionProfileIdByHostId[
             getBrowserSessionProfileHostId(get(), worktreeId, options?.browserRuntimeEnvironmentId)
           ] ?? get().defaultBrowserSessionProfileId)
-    const browserTab = buildWorkspaceFromPage(
-      workspaceId,
-      worktreeId,
-      page,
-      [page.id],
-      sessionProfileId,
-      options?.sessionPartition
-    )
+    const browserTab = {
+      ...buildWorkspaceFromPage(
+        workspaceId,
+        worktreeId,
+        page,
+        [page.id],
+        sessionProfileId,
+        options?.sessionPartition
+      ),
+      ...(options?.chromeless ? { chromeless: true } : {})
+    }
 
     set((s) => {
       const existingTabs = s.browserTabsByWorktree[worktreeId] ?? []
@@ -761,6 +772,51 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
       focusAddressBar: true,
       ...(runtimeEnvironmentId ? { browserRuntimeEnvironmentId: null } : {}),
       targetGroupId: groupId
+    })
+    get().recordFeatureInteraction('browser-tab-created')
+  },
+
+  openCodeServerTabInActiveWorkspace: async () => {
+    const state = get()
+    const worktreeId = state.activeWorktreeId
+    if (!worktreeId) {
+      return
+    }
+    // Reuse the worktree's existing code-server tab instead of stacking a new
+    // workbench boot per keypress.
+    const existing = (state.browserTabsByWorktree[worktreeId] ?? []).find(
+      (tab) => tab.chromeless === true
+    )
+    if (existing) {
+      const pageId = existing.activePageId ?? existing.pageIds?.[0]
+      if (pageId) {
+        state.focusBrowserTabInWorktree(worktreeId, pageId, { surfacePane: true })
+        return
+      }
+    }
+    const worktreePath = Object.values(state.worktreesByRepo ?? {})
+      .flat()
+      .find((worktree) => worktree.id === worktreeId)?.path
+    if (!worktreePath) {
+      throw new Error('No worktree path is available for a code-server tab.')
+    }
+    const browserAvailability = getClientCreationActionPolicy(state, worktreeId)['managed-browser']
+    if (browserAvailability.state !== 'enabled') {
+      throw new Error(browserAvailability.reason)
+    }
+    if (browserAvailability.provider === 'paired-runtime') {
+      // Why: chromeless rendering is a client-local webview affordance; paired
+      // remote runtimes stream their own pages and cannot honor it.
+      throw new Error(
+        'code-server tabs need a client-local browser; this worktree uses a paired remote runtime.'
+      )
+    }
+    const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
+    get().createBrowserTab(worktreeId, `${CODE_SERVER_BASE_URL}/?folder=${worktreePath}`, {
+      title: translate('auto.store.slices.browser.codeServerTabTitle', 'code-server'),
+      activate: true,
+      chromeless: true,
+      ...(runtimeEnvironmentId ? { browserRuntimeEnvironmentId: null } : {})
     })
     get().recordFeatureInteraction('browser-tab-created')
   },
@@ -1039,7 +1095,8 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
         activate: true,
         sessionProfileId,
         sessionPartition,
-        targetGroupId: entryToRestore.position?.groupId
+        targetGroupId: entryToRestore.position?.groupId,
+        chromeless: snap.chromeless
       })
       restoreRecentlyClosedTabPosition(get, worktreeId, restored.id, entryToRestore.position)
       return get().browserTabsByWorktree[worktreeId]?.find((tab) => tab.id === restored.id) ?? null
@@ -1053,7 +1110,8 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
       sessionProfileId,
       sessionPartition,
       targetGroupId: entryToRestore.position?.groupId,
-      browserRuntimeEnvironmentId: firstPage.browserRuntimeEnvironmentId
+      browserRuntimeEnvironmentId: firstPage.browserRuntimeEnvironmentId,
+      chromeless: snap.chromeless
     })
 
     for (const p of restPages) {

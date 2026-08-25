@@ -59,6 +59,7 @@ export function resolveWindowsPowerShellImplementationSetting(settings: GlobalSe
 export type TabBarRuntimeModel = {
   newTerminalShortcut: string
   newBrowserShortcut: string
+  newCodeServerShortcut: string
   newSimulatorShortcut: string
   newFileShortcut: string
   openMarkdownShortcut: string | null
@@ -95,6 +96,7 @@ export function useTabBarRuntimeModel({
 }): TabBarRuntimeModel {
   const newTerminalShortcut = useShortcutLabel('tab.newTerminal')
   const newBrowserShortcut = useShortcutLabel('tab.newBrowser')
+  const newCodeServerShortcut = useShortcutLabel('tab.newCodeServer')
   const newSimulatorShortcut = useShortcutLabel('tab.newSimulator')
   const newFileShortcut = useShortcutLabel('tab.newMarkdown')
   const openMarkdownShortcut = useOptionalShortcutLabel('tab.openMarkdown')
@@ -252,6 +254,7 @@ export function useTabBarRuntimeModel({
   return {
     newTerminalShortcut,
     newBrowserShortcut,
+    newCodeServerShortcut,
     newSimulatorShortcut,
     newFileShortcut,
     openMarkdownShortcut,

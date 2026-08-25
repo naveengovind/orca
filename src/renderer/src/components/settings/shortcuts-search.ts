@@ -59,7 +59,8 @@ export function getShortcutsPaneSearchEntries(options?: {
     ...getShortcutDefinitionSearchEntries()
       .filter(
         ({ actionId }) =>
-          (includeManagedBrowser || actionId !== 'tab.newBrowser') &&
+          (includeManagedBrowser ||
+            (actionId !== 'tab.newBrowser' && actionId !== 'tab.newCodeServer')) &&
           (includeMobileEmulator || actionId !== 'tab.newSimulator')
       )
       .map(({ searchEntry }) => searchEntry),

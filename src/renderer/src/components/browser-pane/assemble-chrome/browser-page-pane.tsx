@@ -107,6 +107,14 @@ export function BrowserPagePane({
   })
 
   const workspaceConnectionId = useAppStore((state) => getConnectionIdFromState(state, worktreeId))
+  // Chromeless workspaces (embedded tool UIs like code-server) render the
+  // guest without the toolbar row.
+  const chromeless = useAppStore(
+    (state) =>
+      (state.browserTabsByWorktree[worktreeId] ?? []).find(
+        (workspace) => workspace.id === workspaceId
+      )?.chromeless === true
+  )
   const certificateFailure = useAppStore(
     (s) => s.browserCertificateFailuresByPageId[browserTab.id] ?? null
   )
@@ -306,32 +314,34 @@ export function BrowserPagePane({
         webviewRef={webviewRef}
         onReload={() => reload.reloadWebviewOrRecoverGuest(false)}
       />
-      <BrowserPageChromeHeader
-        chromeHeaderRef={chromeHeaderRef}
-        browserTab={browserTab}
-        workspaceId={workspaceId}
-        worktreeId={worktreeId}
-        sessionProfileId={sessionProfileId}
-        isActive={isActive}
-        webviewRef={webviewRef}
-        addressBarInputRef={addressBarInputRef}
-        dismissAddressBarSuggestionsRef={dismissAddressBarSuggestionsRef}
-        reload={reload}
-        nav={nav}
-        grab={grab}
-        grabAnnotations={grabAnnotations}
-        annotationSend={annotationSend}
-        markupIsActive={markup.isActive}
-        markupStart={markup.start}
-        markupCancel={markup.cancel}
-        grabElementShortcut={grabElementShortcut}
-        shareableArtifactFile={shareableArtifactFile}
-        currentBrowserUrl={currentBrowserUrl}
-        externalUrl={externalUrl}
-        isBlankTab={isBlankTab}
-        resourceNotice={resourceNotice}
-        setResourceNotice={setResourceNotice}
-      />
+      {chromeless ? null : (
+        <BrowserPageChromeHeader
+          chromeHeaderRef={chromeHeaderRef}
+          browserTab={browserTab}
+          workspaceId={workspaceId}
+          worktreeId={worktreeId}
+          sessionProfileId={sessionProfileId}
+          isActive={isActive}
+          webviewRef={webviewRef}
+          addressBarInputRef={addressBarInputRef}
+          dismissAddressBarSuggestionsRef={dismissAddressBarSuggestionsRef}
+          reload={reload}
+          nav={nav}
+          grab={grab}
+          grabAnnotations={grabAnnotations}
+          annotationSend={annotationSend}
+          markupIsActive={markup.isActive}
+          markupStart={markup.start}
+          markupCancel={markup.cancel}
+          grabElementShortcut={grabElementShortcut}
+          shareableArtifactFile={shareableArtifactFile}
+          currentBrowserUrl={currentBrowserUrl}
+          externalUrl={externalUrl}
+          isBlankTab={isBlankTab}
+          resourceNotice={resourceNotice}
+          setResourceNotice={setResourceNotice}
+        />
+      )}
       {pageViewport?.container
         ? createPortal(
             <BrowserPageViewportOverlays
