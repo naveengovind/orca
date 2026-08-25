@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
 import type { TuiAgent } from '../../../../shared/tui-agent'
-import { translate } from '@/i18n/i18n'
 import { focusTerminalTabSurface } from '@/lib/focus-terminal-tab-surface'
-import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
+import { launchAgentFromNewTabEntry as launchAgentFromNewTabEntryAction } from './tab-create-agent-launch'
 import type { WindowsTerminalCapabilities } from '@/lib/windows-terminal-capabilities'
 import { useAppStore } from '../../store'
 import type { TabAgentLaunchOption } from './tab-agent-launch-options'
 import { buildTabCreateMenuOptions, type TabCreateMenuOption } from './tab-create-menu-options'
+import { selectTabCreateMenuOption } from './tab-create-menu-option-select'
 import { resolveWindowsShellLaunchTarget } from './windows-shell-launch'
 import {
   buildWindowsShellMenuEntries,
@@ -55,6 +54,7 @@ export function useTabBarCreateMenuController({
   onNewTerminalWithShell,
   onNewBrowserTab,
   onNewCodeServerTab,
+  onNewDevinCloudTab,
   onNewSimulatorTab,
   onNewFileTab,
   onOpenFileTab
@@ -78,6 +78,7 @@ export function useTabBarCreateMenuController({
   onNewTerminalWithShell?: (shell: string) => void
   onNewBrowserTab: () => void
   onNewCodeServerTab?: () => void
+  onNewDevinCloudTab?: () => void
   onNewSimulatorTab?: () => void
   onNewFileTab?: () => void
   onOpenFileTab?: () => void
@@ -164,6 +165,8 @@ export function useTabBarCreateMenuController({
         hasNewBrowser: !terminalOnly && managedBrowserCreationEnabled,
         hasNewCodeServer:
           !terminalOnly && managedBrowserCreationEnabled && Boolean(onNewCodeServerTab),
+        hasNewDevinCloud:
+          !terminalOnly && managedBrowserCreationEnabled && Boolean(onNewDevinCloudTab),
         hasNewMarkdown: !terminalOnly && Boolean(onNewFileTab),
         hasOpenMarkdown: !terminalOnly && Boolean(onOpenFileTab),
         hasSimulator:
@@ -176,6 +179,8 @@ export function useTabBarCreateMenuController({
     [
       mobileEmulatorEnabled,
       managedBrowserCreationEnabled,
+      onNewCodeServerTab,
+      onNewDevinCloudTab,
       mobileEmulatorCreationEnabled,
       onNewFileTab,
       onNewSimulatorTab,
@@ -186,65 +191,41 @@ export function useTabBarCreateMenuController({
     ]
   )
   const handleSelectCreateMenuOption = (option: TabCreateMenuOption): void => {
-    switch (option.kind) {
-      case 'new-terminal':
+    selectTabCreateMenuOption(option, {
+      onNewTerminalTab: () => {
         queueNewActiveTerminalFocusAfterNewTabMenuClose()
         onNewTerminalTab()
-        break
-      case 'new-terminal-shell':
-        if (!onNewTerminalWithShell || !option.shell) {
-          break
+      },
+      onNewTerminalShell: (shell) => {
+        if (!onNewTerminalWithShell) {
+          return
         }
         queueNewActiveTerminalFocusAfterNewTabMenuClose()
         onNewTerminalWithShell(
           resolveWindowsShellLaunchTarget(
-            option.shell,
+            shell,
             defaultWindowsPowerShellImplementation,
             windowsTerminalCapabilities.pwshAvailable
           )
         )
-        break
-      case 'new-browser':
-        onNewBrowserTab()
-        break
-      case 'new-code-server':
-        onNewCodeServerTab?.()
-        break
-      case 'new-markdown':
-        onNewFileTab?.()
-        break
-      case 'open-markdown':
-        onOpenFileTab?.()
-        break
-      case 'new-simulator':
-      case 'go-to-simulator':
-        onNewSimulatorTab?.()
-        break
-    }
+      },
+      onNewBrowserTab,
+      onNewCodeServerTab,
+      onNewDevinCloudTab,
+      onNewFileTab,
+      onOpenFileTab,
+      onNewSimulatorTab
+    })
   }
   const launchAgentFromNewTabEntry = (agent: TuiAgent): void => {
-    const option = agentLaunchOptions.find((candidate) => candidate.agent === agent)
-    const result = launchAgentInNewTab({
+    launchAgentFromNewTabEntryAction({
       agent,
+      agentLabel: agentLaunchOptions.find((candidate) => candidate.agent === agent)?.label,
       worktreeId,
       groupId: resolvedGroupId,
-      launchSource: 'tab_bar_quick_launch'
+      queueTerminalTabFocus: queueTerminalTabFocusAfterNewTabMenuClose,
+      queueNewActiveTerminalFocus: queueNewActiveTerminalFocusAfterNewTabMenuClose
     })
-    if (!result) {
-      toast.error(
-        translate(
-          'auto.components.tab.bar.TabBar.ab589350e5',
-          'Could not build launch command for {{value0}}.',
-          { value0: option?.label ?? agent }
-        )
-      )
-      return
-    }
-    if (result.tabId) {
-      queueTerminalTabFocusAfterNewTabMenuClose(result.tabId)
-      return
-    }
-    queueNewActiveTerminalFocusAfterNewTabMenuClose()
   }
   const runPendingNewTabMenuFocusAfterClose = (): void => {
     const pendingFocus = pendingNewTabMenuFocusRef.current

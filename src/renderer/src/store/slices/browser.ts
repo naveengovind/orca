@@ -17,7 +17,10 @@ import type { WorkspaceSessionState } from '../../../../shared/workspace-session
 import { GRAB_BUDGET, type BrowserPageAnnotation } from '../../../../shared/browser-grab-types'
 import { FLOATING_TERMINAL_WORKTREE_ID, ORCA_BROWSER_BLANK_URL } from '../../../../shared/constants'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
-import { DEFAULT_CODE_SERVER_URL } from '../../../../shared/code-server-url'
+import {
+  DEFAULT_CODE_SERVER_URL,
+  DEFAULT_DEVIN_CLOUD_URL
+} from '../../../../shared/embedded-app-urls'
 import { redactKagiSessionToken } from '../../../../shared/browser-url'
 import {
   MAX_BROWSER_HISTORY_ENTRIES,
@@ -159,6 +162,7 @@ export type BrowserSlice = {
   ) => BrowserWorkspace
   openNewBrowserTabInActiveWorkspace: (groupId: string) => Promise<void>
   openCodeServerTabInActiveWorkspace: () => Promise<void>
+  openDevinCloudTabInActiveWorkspace: () => Promise<void>
   openBrowserProfileTabInActiveWorkspace: (url: string, profileId: string) => Promise<boolean>
   closeBrowserTab: (tabId: string) => void
   shutdownWorktreeBrowsers: (worktreeId: string) => Promise<void>
@@ -555,6 +559,53 @@ function findPage(
   return pageById.get(pageId) ?? null
 }
 
+// Chromeless embedded-app tabs (code-server, Devin Cloud): client-local
+// webviews even on remote-owned worktrees — streamed remote pages would
+// defeat the point, and the app's port must be reachable locally (port
+// forward for remote hosts). Reuse is matched by URL origin so each app
+// keeps one tab per worktree. Web-client windows are refused by
+// createBrowserTab's own materialization guard.
+async function openChromelessAppTabInActiveWorkspace(
+  get: () => AppState,
+  input: { url: string; title: string }
+): Promise<void> {
+  const state = get()
+  const worktreeId = state.activeWorktreeId
+  if (!worktreeId) {
+    return
+  }
+  const targetOrigin = new URL(input.url).origin
+  const existing = (state.browserTabsByWorktree[worktreeId] ?? []).find((tab) => {
+    if (tab.chromeless !== true) {
+      return false
+    }
+    try {
+      return new URL(tab.url).origin === targetOrigin
+    } catch {
+      return false
+    }
+  })
+  if (existing) {
+    const pageId = existing.activePageId ?? existing.pageIds?.[0]
+    if (pageId) {
+      state.focusBrowserTabInWorktree(worktreeId, pageId, { surfacePane: true })
+      return
+    }
+  }
+  const browserAvailability = getClientCreationActionPolicy(state, worktreeId)['managed-browser']
+  if (browserAvailability.state !== 'enabled') {
+    throw new Error(browserAvailability.reason)
+  }
+  const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
+  get().createBrowserTab(worktreeId, input.url, {
+    title: input.title,
+    activate: true,
+    chromeless: true,
+    ...(runtimeEnvironmentId ? { browserRuntimeEnvironmentId: null } : {})
+  })
+  get().recordFeatureInteraction('browser-tab-created')
+}
+
 export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = (set, get) => ({
   browserTabsByWorktree: {},
   browserPagesByWorkspace: {},
@@ -774,52 +825,32 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
 
   openCodeServerTabInActiveWorkspace: async () => {
     const state = get()
-    const worktreeId = state.activeWorktreeId
-    if (!worktreeId) {
-      return
-    }
-    // Reuse the worktree's existing code-server tab instead of stacking a new
-    // workbench boot per keypress.
-    const existing = (state.browserTabsByWorktree[worktreeId] ?? []).find(
-      (tab) => tab.chromeless === true
-    )
-    if (existing) {
-      const pageId = existing.activePageId ?? existing.pageIds?.[0]
-      if (pageId) {
-        state.focusBrowserTabInWorktree(worktreeId, pageId, { surfacePane: true })
-        return
-      }
-    }
     const worktreePath =
       Object.values(state.worktreesByRepo ?? {})
         .flat()
-        .find((worktree) => worktree.id === worktreeId)?.path ??
+        .find((worktree) => worktree.id === state.activeWorktreeId)?.path ??
       (state.folderWorkspaces ?? []).find(
-        (workspace) => folderWorkspaceKey(workspace.id) === worktreeId
+        (workspace) => folderWorkspaceKey(workspace.id) === state.activeWorktreeId
       )?.folderPath
-    if (!worktreePath) {
+    if (state.activeWorktreeId && !worktreePath) {
       throw new Error('No worktree path is available for a code-server tab.')
     }
-    const browserAvailability = getClientCreationActionPolicy(state, worktreeId)['managed-browser']
-    if (browserAvailability.state !== 'enabled') {
-      throw new Error(browserAvailability.reason)
-    }
-    // Why: always materialize client-local (browserRuntimeEnvironmentId: null),
-    // even on paired-runtime worktrees — chromeless rendering is a local
-    // webview affordance, and streamed remote pages would defeat the point.
-    // The user's code-server port must be reachable locally (port forward).
-    // createBrowserTab's own guard still refuses web-client windows, which
-    // cannot host local webviews at all.
-    const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
     const codeServerBaseUrl =
       (state.codeServerUrl ?? '').trim().replace(/\/+$/, '') || DEFAULT_CODE_SERVER_URL
-    get().createBrowserTab(worktreeId, `${codeServerBaseUrl}/?folder=${worktreePath}`, {
-      title: translate('auto.store.slices.browser.codeServerTabTitle', 'code-server'),
-      activate: true,
-      chromeless: true,
-      ...(runtimeEnvironmentId ? { browserRuntimeEnvironmentId: null } : {})
+    await openChromelessAppTabInActiveWorkspace(get, {
+      url: `${codeServerBaseUrl}/?folder=${worktreePath}`,
+      title: translate('auto.store.slices.browser.codeServerTabTitle', 'code-server')
     })
-    get().recordFeatureInteraction('browser-tab-created')
+  },
+
+  openDevinCloudTabInActiveWorkspace: async () => {
+    const state = get()
+    const devinCloudBaseUrl =
+      (state.devinCloudUrl ?? '').trim().replace(/\/+$/, '') || DEFAULT_DEVIN_CLOUD_URL
+    await openChromelessAppTabInActiveWorkspace(get, {
+      url: devinCloudBaseUrl,
+      title: translate('auto.store.slices.browser.devinCloudTabTitle', 'Devin')
+    })
   },
 
   openBrowserProfileTabInActiveWorkspace: async (url, profileId) => {

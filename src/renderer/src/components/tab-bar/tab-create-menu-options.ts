@@ -7,6 +7,7 @@ export type TabCreateMenuOptionKind =
   | 'go-to-simulator'
   | 'new-browser'
   | 'new-code-server'
+  | 'new-devin-cloud'
   | 'new-markdown'
   | 'new-simulator'
   | 'new-terminal'
@@ -24,6 +25,7 @@ export type TabCreateMenuOption = {
 export type TabCreateMenuOptionsContext = {
   hasNewBrowser: boolean
   hasNewCodeServer: boolean
+  hasNewDevinCloud: boolean
   hasNewMarkdown: boolean
   hasOpenMarkdown: boolean
   hasSimulator: boolean
@@ -134,6 +136,20 @@ export function buildTabCreateMenuOptions(
         translate('auto.components.tab.bar.tab.create.menu.options.newCodeServerKw3', 'vscode'),
         translate('auto.components.tab.bar.tab.create.menu.options.newCodeServerKw4', 'editor'),
         translate('auto.components.tab.bar.tab.create.menu.options.newCodeServerKw5', 'review')
+      ]
+    })
+  }
+
+  if (context.hasNewDevinCloud) {
+    const label = translate('auto.components.tab.bar.TabBar.newDevinCloudTab', 'Devin (Cloud)')
+    options.push({
+      id: 'new-devin-cloud',
+      kind: 'new-devin-cloud',
+      label,
+      keywords: [
+        translate('auto.components.tab.bar.tab.create.menu.options.newDevinCloudKw1', 'devin'),
+        translate('auto.components.tab.bar.tab.create.menu.options.newDevinCloudKw2', 'cloud'),
+        translate('auto.components.tab.bar.tab.create.menu.options.newDevinCloudKw3', 'agent')
       ]
     })
   }

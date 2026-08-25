@@ -64,6 +64,7 @@ export type UiCommandEventApi = {
   onWorktreeHistoryNavigate: (callback: (direction: 'back' | 'forward') => void) => () => void
   onNewBrowserTab: (callback: () => void) => () => void
   onNewCodeServerTab: (callback: () => void) => () => void
+  onNewDevinCloudTab: (callback: () => void) => () => void
   onNewMarkdownTab: (callback: () => void) => () => void
   onNewSimulatorTab: (callback: () => void) => () => void
   onRequestTabCreate: (

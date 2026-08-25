@@ -3,8 +3,11 @@ import type { GlobalSettings } from '../../../../shared/global-settings-types'
 import { useAppStore } from '../../store'
 import { matchesSettingsSearch } from './settings-search'
 import { getBrowserPaneSearchEntries } from './browser-search'
-import { CodeServerUrlSetting } from './CodeServerUrlSetting'
-import { DEFAULT_CODE_SERVER_URL } from '../../../../shared/code-server-url'
+import { EmbeddedAppUrlSetting } from './EmbeddedAppUrlSetting'
+import {
+  DEFAULT_CODE_SERVER_URL,
+  DEFAULT_DEVIN_CLOUD_URL
+} from '../../../../shared/embedded-app-urls'
 import { getBrowserLinkRoutingDescription } from './browser-link-routing-copy'
 import { getBrowserUsePaneSearchEntries } from './browser-use-search'
 import { getBrowserPaneCombinedSearchEntries } from './browser-pane-search'
@@ -56,6 +59,8 @@ export function BrowserPane({
   const setBrowserDefaultUrl = useAppStore((s) => s.setBrowserDefaultUrl)
   const codeServerUrl = useAppStore((s) => s.codeServerUrl)
   const setCodeServerUrl = useAppStore((s) => s.setCodeServerUrl)
+  const devinCloudUrl = useAppStore((s) => s.devinCloudUrl)
+  const setDevinCloudUrl = useAppStore((s) => s.setDevinCloudUrl)
   const browserDefaultSearchEngine = useAppStore((s) => s.browserDefaultSearchEngine)
   const setBrowserDefaultSearchEngine = useAppStore((s) => s.setBrowserDefaultSearchEngine)
   const browserDefaultZoomLevel = useAppStore((s) => s.browserDefaultZoomLevel)
@@ -80,6 +85,7 @@ export function BrowserPane({
   )
   const [newProfileDialogOpen, setNewProfileDialogOpen] = useState(false)
   const [codeServerUrlDraft, setCodeServerUrlDraft] = useState(() => codeServerUrl ?? '')
+  const [devinCloudUrlDraft, setDevinCloudUrlDraft] = useState(() => devinCloudUrl ?? '')
   const sessionCookieScrollFrameIdsRef = useRef<number[]>([])
   const resolvedHomePageDraftState = resolveBrowserHomePageDraftState(
     homePageDraftState,
@@ -230,13 +236,49 @@ export function BrowserPane({
         />
       ) : null}
 
-      <CodeServerUrlSetting
+      <EmbeddedAppUrlSetting
+        title={translate(
+          'auto.components.settings.EmbeddedAppUrlSetting.csTitle',
+          'code-server URL'
+        )}
+        description={translate(
+          'auto.components.settings.EmbeddedAppUrlSetting.csDescription',
+          'Base URL the New Code Server tab opens with ?folder=<worktree path>. Leave empty for the default.'
+        )}
+        savedMessage={translate(
+          'auto.components.settings.EmbeddedAppUrlSetting.csSaved',
+          'code-server URL saved.'
+        )}
+        keywords={['code', 'code-server', 'vscode', 'editor', 'url', 'port', 'review']}
         value={codeServerUrlDraft}
         placeholder={DEFAULT_CODE_SERVER_URL}
         onChange={setCodeServerUrlDraft}
         onSave={(url) => {
           setCodeServerUrl(url)
           setCodeServerUrlDraft(url ?? '')
+        }}
+      />
+
+      <EmbeddedAppUrlSetting
+        title={translate(
+          'auto.components.settings.EmbeddedAppUrlSetting.devinTitle',
+          'Devin (Cloud) URL'
+        )}
+        description={translate(
+          'auto.components.settings.EmbeddedAppUrlSetting.devinDescription',
+          'URL the Devin (Cloud) tab opens. Leave empty for the default.'
+        )}
+        savedMessage={translate(
+          'auto.components.settings.EmbeddedAppUrlSetting.devinSaved',
+          'Devin (Cloud) URL saved.'
+        )}
+        keywords={['devin', 'cloud', 'agent', 'url']}
+        value={devinCloudUrlDraft}
+        placeholder={DEFAULT_DEVIN_CLOUD_URL}
+        onChange={setDevinCloudUrlDraft}
+        onSave={(url) => {
+          setDevinCloudUrl(url)
+          setDevinCloudUrlDraft(url ?? '')
         }}
       />
 

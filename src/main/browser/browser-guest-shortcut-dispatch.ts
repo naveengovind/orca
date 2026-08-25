@@ -132,6 +132,8 @@ export function forwardGuestShortcutInput(
     // Why: the code-server chord must work while its own guest webview is
     // focused — that is the primary place the user presses it.
     renderer.send('ui:newCodeServerTab')
+  } else if (keybindingMatchesAction('tab.newDevinCloud', input, process.platform, keybindings)) {
+    renderer.send('ui:newDevinCloudTab')
   } else if (
     process.platform === 'darwin' &&
     (isMobileEmulatorEnabled?.() ?? true) &&

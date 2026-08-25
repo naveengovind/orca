@@ -261,7 +261,8 @@
           "d175274b6d": "New Browser Tab",
           "08fc23631d": "Browser",
           "remoteCookieImportUnavailable": "Manual cookie file import is unavailable while a remote runtime is active.",
-          "codeServerTabTitle": "code-server"
+          "codeServerTabTitle": "code-server",
+          "devinCloudTabTitle": "Devin"
         },
         "editor": {
           "dcb521ed29": "This file is in a conflict state, but no working-tree file is available to edit.",
@@ -3222,7 +3223,8 @@
             "ab589350e5": "Could not build launch command for {{value0}}.",
             "7a9b4af2af": "Scroll tabs left",
             "232e075b07": "Scroll tabs right",
-            "newCodeServerTab": "New Code Server"
+            "newCodeServerTab": "New Code Server",
+            "newDevinCloudTab": "Devin (Cloud)"
           },
           "TabBarCreateEntry": {
             "d62d63b807": "Create file",
@@ -3310,7 +3312,10 @@
                   "newCodeServerKw2": "code-server",
                   "newCodeServerKw3": "vscode",
                   "newCodeServerKw4": "editor",
-                  "newCodeServerKw5": "review"
+                  "newCodeServerKw5": "review",
+                  "newDevinCloudKw1": "devin",
+                  "newDevinCloudKw2": "cloud",
+                  "newDevinCloudKw3": "agent"
                 }
               }
             }
@@ -11357,6 +11362,14 @@
           "invalid": "Enter an http:// or https:// URL.",
           "saved": "code-server URL saved.",
           "save": "Save"
+        },
+        "EmbeddedAppUrlSetting": {
+          "csTitle": "code-server URL",
+          "csDescription": "Base URL the New Code Server tab opens with ?folder=<worktree path>. Leave empty for the default.",
+          "csSaved": "code-server URL saved.",
+          "devinTitle": "Devin (Cloud) URL",
+          "devinDescription": "URL the Devin (Cloud) tab opens. Leave empty for the default.",
+          "devinSaved": "Devin (Cloud) URL saved."
         }
       },
       "right": {

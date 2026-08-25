@@ -60,6 +60,7 @@ export type TabBarRuntimeModel = {
   newTerminalShortcut: string
   newBrowserShortcut: string
   newCodeServerShortcut: string
+  newDevinCloudShortcut: string
   newSimulatorShortcut: string
   newFileShortcut: string
   openMarkdownShortcut: string | null
@@ -97,6 +98,7 @@ export function useTabBarRuntimeModel({
   const newTerminalShortcut = useShortcutLabel('tab.newTerminal')
   const newBrowserShortcut = useShortcutLabel('tab.newBrowser')
   const newCodeServerShortcut = useShortcutLabel('tab.newCodeServer')
+  const newDevinCloudShortcut = useShortcutLabel('tab.newDevinCloud')
   const newSimulatorShortcut = useShortcutLabel('tab.newSimulator')
   const newFileShortcut = useShortcutLabel('tab.newMarkdown')
   const openMarkdownShortcut = useOptionalShortcutLabel('tab.openMarkdown')
@@ -255,6 +257,7 @@ export function useTabBarRuntimeModel({
     newTerminalShortcut,
     newBrowserShortcut,
     newCodeServerShortcut,
+    newDevinCloudShortcut,
     newSimulatorShortcut,
     newFileShortcut,
     openMarkdownShortcut,

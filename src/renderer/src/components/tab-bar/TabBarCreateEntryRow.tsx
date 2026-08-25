@@ -1,5 +1,6 @@
 import React from 'react'
 import {
+  Cloud,
   FilePlus,
   FileText,
   GitCompare,
@@ -162,6 +163,8 @@ function getActionPresentation(option: ActiveOption): {
         <Globe className="size-3.5 shrink-0" aria-hidden="true" />
       ) : option.option.kind === 'new-code-server' ? (
         <SquareCode className="size-3.5 shrink-0" aria-hidden="true" />
+      ) : option.option.kind === 'new-devin-cloud' ? (
+        <Cloud className="size-3.5 shrink-0" aria-hidden="true" />
       ) : option.option.kind === 'new-markdown' ? (
         <FilePlus className="size-3.5 shrink-0" aria-hidden="true" />
       ) : option.option.kind === 'open-markdown' ? (

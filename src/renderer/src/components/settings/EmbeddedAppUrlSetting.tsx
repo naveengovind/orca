@@ -5,39 +5,37 @@ import { Label } from '../ui/label'
 import { SearchableSetting } from './SearchableSetting'
 import { translate } from '@/i18n/i18n'
 
-type CodeServerUrlSettingProps = {
+type EmbeddedAppUrlSettingProps = {
+  title: string
+  description: string
+  savedMessage: string
+  keywords: readonly string[]
   value: string
   placeholder: string
   onChange: (value: string) => void
   onSave: (url: string | null) => void
 }
 
-export function CodeServerUrlSetting({
+export function EmbeddedAppUrlSetting({
+  title,
+  description,
+  savedMessage,
+  keywords,
   value,
   placeholder,
   onChange,
   onSave
-}: CodeServerUrlSettingProps): React.JSX.Element {
+}: EmbeddedAppUrlSettingProps): React.JSX.Element {
   return (
     <SearchableSetting
-      title={translate('auto.components.settings.CodeServerUrlSetting.title', 'code-server URL')}
-      description={translate(
-        'auto.components.settings.CodeServerUrlSetting.description',
-        'Base URL the New Code Server tab opens with ?folder=<worktree path>. Leave empty for the default.'
-      )}
-      keywords={['code', 'code-server', 'vscode', 'editor', 'url', 'port', 'review']}
+      title={title}
+      description={description}
+      keywords={[...keywords]}
       className="flex items-start justify-between gap-4 py-2"
     >
       <div className="min-w-0 shrink space-y-0.5">
-        <Label>
-          {translate('auto.components.settings.CodeServerUrlSetting.title', 'code-server URL')}
-        </Label>
-        <p className="text-xs text-muted-foreground">
-          {translate(
-            'auto.components.settings.CodeServerUrlSetting.description',
-            'Base URL the New Code Server tab opens with ?folder=<worktree path>. Leave empty for the default.'
-          )}
-        </p>
+        <Label>{title}</Label>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <form
         className="flex shrink-0 items-center gap-2"
@@ -58,12 +56,7 @@ export function CodeServerUrlSetting({
             return
           }
           onSave(trimmed.replace(/\/+$/, ''))
-          toast.success(
-            translate(
-              'auto.components.settings.CodeServerUrlSetting.saved',
-              'code-server URL saved.'
-            )
-          )
+          toast.success(savedMessage)
         }}
       >
         <Input

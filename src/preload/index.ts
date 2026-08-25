@@ -3825,6 +3825,11 @@ const api = {
       ipcRenderer.on('ui:newCodeServerTab', listener)
       return () => ipcRenderer.removeListener('ui:newCodeServerTab', listener)
     },
+    onNewDevinCloudTab: (callback: () => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent) => callback()
+      ipcRenderer.on('ui:newDevinCloudTab', listener)
+      return () => ipcRenderer.removeListener('ui:newDevinCloudTab', listener)
+    },
     onNewMarkdownTab: (callback: () => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent) => callback()
       ipcRenderer.on('ui:newMarkdownTab', listener)

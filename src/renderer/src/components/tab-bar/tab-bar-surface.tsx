@@ -62,6 +62,7 @@ export function renderTabBarSurface({
     newTerminalShortcut,
     newBrowserShortcut,
     newCodeServerShortcut,
+    newDevinCloudShortcut,
     newSimulatorShortcut,
     newFileShortcut,
     openMarkdownShortcut
@@ -106,6 +107,7 @@ export function renderTabBarSurface({
     newTerminalShortcut,
     newBrowserShortcut,
     newCodeServerShortcut,
+    newDevinCloudShortcut,
     newSimulatorShortcut,
     newFileShortcut,
     openMarkdownShortcut,

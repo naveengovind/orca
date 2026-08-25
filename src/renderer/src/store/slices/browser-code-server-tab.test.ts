@@ -145,6 +145,38 @@ describe('openCodeServerTabInActiveWorkspace', () => {
     )
   })
 
+  it('opens Devin Cloud as a chromeless tab and keeps it separate from code-server', async () => {
+    const store = createTestStore()
+    seedActiveWorktreePath(store)
+
+    await store.getState().openDevinCloudTabInActiveWorkspace()
+    await store.getState().openCodeServerTabInActiveWorkspace()
+
+    const tabs = store.getState().browserTabsByWorktree['wt-1'] ?? []
+    expect(tabs).toHaveLength(2)
+    expect(tabs.map((tab) => tab.url).sort()).toEqual([
+      'http://127.0.0.1:13337/?folder=/repo/wt-1',
+      'https://app.devin.ai'
+    ])
+    expect(tabs.every((tab) => tab.chromeless === true)).toBe(true)
+
+    // Reuse matches by origin: reopening Devin focuses, not duplicates.
+    await store.getState().openDevinCloudTabInActiveWorkspace()
+    expect(store.getState().browserTabsByWorktree['wt-1']).toHaveLength(2)
+  })
+
+  it('honors the configured Devin Cloud URL setting', async () => {
+    const store = createTestStore()
+    seedActiveWorktreePath(store)
+    store.setState({ devinCloudUrl: 'https://devin.mycorp.dev/' })
+
+    await store.getState().openDevinCloudTabInActiveWorkspace()
+
+    expect(store.getState().browserTabsByWorktree['wt-1']?.[0]?.url).toBe(
+      'https://devin.mycorp.dev'
+    )
+  })
+
   it('rejects when no worktree path is known for the active worktree', async () => {
     const store = createTestStore()
 

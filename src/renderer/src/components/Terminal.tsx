@@ -1705,6 +1705,16 @@ function Terminal(): React.JSX.Element | null {
       .catch(showClientCreationActionError)
   }, [activeWorktreeId])
 
+  const handleNewDevinCloudTab = useCallback(() => {
+    if (!activeWorktreeId) {
+      return
+    }
+    void useAppStore
+      .getState()
+      .openDevinCloudTabInActiveWorkspace()
+      .catch(showClientCreationActionError)
+  }, [activeWorktreeId])
+
   const handleOpenEntry = useCallback(async (args: TabCreateEntryArgs) => {
     await openTabBarEntry(args)
   }, [])
@@ -2155,6 +2165,17 @@ function Terminal(): React.JSX.Element | null {
         return
       }
 
+      // Cmd/Ctrl+Alt+D - Devin (Cloud) tab (chromeless embedded web app)
+      if (!e.repeat && matchShortcut('tab.newDevinCloud')) {
+        e.preventDefault()
+        notifyTerminalCapture('tab.newDevinCloud')
+        if (floatingWorkspaceFocused) {
+          return
+        }
+        handleNewDevinCloudTab()
+        return
+      }
+
       // Cmd/Ctrl+Shift+E — new mobile emulator tab (macOS only)
       if (!e.repeat && mobileEmulatorEnabled && matchShortcut('tab.newSimulator')) {
         e.preventDefault()
@@ -2356,6 +2377,7 @@ function Terminal(): React.JSX.Element | null {
     activeWorktreeId,
     handleNewBrowserTab,
     handleNewCodeServerTab,
+    handleNewDevinCloudTab,
     handleNewSimulatorTab,
     handleNewFile,
     handleNewTab,
@@ -2505,6 +2527,7 @@ function Terminal(): React.JSX.Element | null {
             onNewTerminalWithShell={handleNewTab}
             onNewBrowserTab={handleNewBrowserTab}
             onNewCodeServerTab={handleNewCodeServerTab}
+            onNewDevinCloudTab={handleNewDevinCloudTab}
             onNewSimulatorTab={mobileEmulatorEnabled ? handleNewSimulatorTab : undefined}
             onOpenEntry={handleOpenEntry}
             onNewFileTab={handleNewFile}
