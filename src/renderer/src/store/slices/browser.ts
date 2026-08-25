@@ -798,8 +798,9 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
       Object.values(state.worktreesByRepo ?? {})
         .flat()
         .find((worktree) => worktree.id === worktreeId)?.path ??
-      state.folderWorkspaces.find((workspace) => folderWorkspaceKey(workspace.id) === worktreeId)
-        ?.folderPath
+      (state.folderWorkspaces ?? []).find(
+        (workspace) => folderWorkspaceKey(workspace.id) === worktreeId
+      )?.folderPath
     if (!worktreePath) {
       throw new Error('No worktree path is available for a code-server tab.')
     }
