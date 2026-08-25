@@ -1,0 +1,93 @@
+name: Fork macOS arm64 Release
+
+# Fork-only workflow: builds an UNSIGNED macOS arm64 app from this branch and
+# publishes it as a GitHub release on the fork. No upstream secrets required.
+# The app is ad-hoc signed at best; after downloading, clear quarantine once:
+#   xattr -dr com.apple.quarantine /Applications/Orca.app
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (default: code-server-tab-b<run number>)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-mac-arm64-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - name: Cache electron-builder downloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: electron-builder-mac-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            electron-builder-mac-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build macOS app (unsigned, host arm64)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: pnpm run build:mac
+
+      - name: List build output
+        run: ls -lh dist/ || true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag='${{ inputs.tag }}'
+          if [ -z "$tag" ]; then
+            tag="code-server-tab-b${{ github.run_number }}"
+          fi
+          notes="Unsigned macOS arm64 build of the code-server-tab branch (chromeless code-server tab, Mod+Shift+C).
+
+          After installing, clear Gatekeeper quarantine once:
+          \`xattr -dr com.apple.quarantine /Applications/Orca.app\`
+
+          If macOS still refuses to launch it, re-sign ad hoc:
+          \`codesign --force --deep -s - /Applications/Orca.app\`
+
+          Built from ${{ github.sha }}."
+          assets=()
+          while IFS= read -r f; do assets+=("$f"); done < <(find dist -maxdepth 1 \( -name '*.dmg' -o -name '*.zip' \) -type f)
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo 'No dmg/zip artifacts found in dist/' >&2
+            exit 1
+          fi
+          gh release create "$tag" "${assets[@]}" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "code-server tab — mac arm64 ($tag)" \
+            --notes "$notes" \
+            --prerelease
