@@ -45,6 +45,8 @@ function makeHarness(chromeless: boolean): {
 }
 
 describe('forwardGuestShortcutInput on chromeless guests', () => {
+  // Why: the page owns the ENTIRE keyboard — Orca must never intercept a
+  // chord while a chromeless guest (code-server / Devin) is focused.
   it.each([
     ['browser.find (Mod+F)', modKey('f', 'KeyF'), 'ui:findInBrowserPage'],
     ['browser.reload (Mod+R)', modKey('r', 'KeyR'), 'ui:reloadBrowserPage'],
@@ -62,18 +64,19 @@ describe('forwardGuestShortcutInput on chromeless guests', () => {
     expect(chromeless.event.preventDefault).not.toHaveBeenCalled()
   })
 
-  it('keeps hard reload as the chromeless escape hatch', () => {
+  it.each([
+    ['quick open (Mod+P)', modKey('p', 'KeyP')],
+    ['worktree palette (Mod+J)', modKey('j', 'KeyJ')],
+    ['settings (Mod+,)', modKey(',', 'Comma')],
+    ['hard reload (Mod+Shift+R)', modKey('R', 'KeyR', { shift: true })],
+    ['new code-server tab (Mod+Shift+C)', modKey('C', 'KeyC', { shift: true })],
+    ['new terminal tab (Mod+T)', modKey('t', 'KeyT')],
+    ['jump to tab (Mod+1)', modKey('1', 'Digit1')]
+  ])('lets the page keep %s too', (_label, input) => {
     const { ctx, send, event } = makeHarness(true)
-    const handled = forwardGuestShortcutInput(ctx, event, modKey('R', 'KeyR', { shift: true }))
-    expect(handled).toBe(true)
-    expect(send).toHaveBeenCalledWith('ui:hardReloadBrowserPage')
-  })
-
-  it('still intercepts tab creation chords on chromeless guests', () => {
-    const { ctx, send, event } = makeHarness(true)
-    const handled = forwardGuestShortcutInput(ctx, event, modKey('C', 'KeyC', { shift: true }))
-    expect(handled).toBe(true)
-    expect(send).toHaveBeenCalledWith('ui:newCodeServerTab')
+    expect(forwardGuestShortcutInput(ctx, event, input)).toBe(false)
+    expect(send).not.toHaveBeenCalled()
+    expect(event.preventDefault).not.toHaveBeenCalled()
   })
 
   it('treats an absent resolver as chromeful', () => {

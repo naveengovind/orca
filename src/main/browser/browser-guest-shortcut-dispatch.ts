@@ -41,11 +41,12 @@ export function forwardGuestShortcutInput(
     isChromelessGuest,
     forwardBrowserPageZoom
   } = ctx
-  // Why: a chromeless guest (embedded tool UI like code-server) has no
-  // toolbar/find/address bar, and its page owns editor-critical chords
-  // (Cmd+F/W/L/[/]/R). Let those reach the page; keep hard reload as the
-  // recover-a-wedged-page escape hatch and all tab creation/switch chords.
-  const chromelessGuest = isChromelessGuest?.(browserTabId) === true
+  // Why: a chromeless guest (embedded tool UI like code-server) owns the
+  // ENTIRE keyboard — every chord reaches the page, none reach Orca. Escape
+  // and reload stay reachable by mouse (tab strip, right-click ▸ Reload).
+  if (isChromelessGuest?.(browserTabId) === true) {
+    return false
+  }
   const keybindings = getKeybindings?.()
   if (action?.type === 'zoom') {
     // Why: focused guest key events never reach the renderer-owned webview ref that applies Orca's page zoom.
@@ -146,7 +147,6 @@ export function forwardGuestShortcutInput(
     // Why: Cmd/Ctrl+T opens a terminal even when a browser guest is focused (Shift+B is the new-browser-tab shortcut).
     renderer.send('ui:newTerminalTab')
   } else if (
-    !chromelessGuest &&
     keybindingMatchesAction('browser.focusAddressBar', input, process.platform, keybindings)
   ) {
     // Why: the address bar lives in renderer chrome, not the guest page; forward so the active BrowserPane can focus its input.
@@ -154,16 +154,10 @@ export function forwardGuestShortcutInput(
   } else if (keybindingMatchesAction('browser.hardReload', input, process.platform, keybindings)) {
     // Why: forward hard reload so reloadIgnoringCache() runs on the renderer's parked-webview ref that owns the guest surface.
     renderer.send('ui:hardReloadBrowserPage')
-  } else if (
-    !chromelessGuest &&
-    keybindingMatchesAction('browser.reload', input, process.platform, keybindings)
-  ) {
+  } else if (keybindingMatchesAction('browser.reload', input, process.platform, keybindings)) {
     // Why: forward soft reload so the renderer's reload() hits the parked-webview eviction the guest's built-in shortcut skips.
     renderer.send('ui:reloadBrowserPage')
-  } else if (
-    !chromelessGuest &&
-    keybindingMatchesAction('browser.find', input, process.platform, keybindings)
-  ) {
+  } else if (keybindingMatchesAction('browser.find', input, process.platform, keybindings)) {
     const browserWorkspaceId = resolveWorkspaceId?.(browserTabId)
     if (browserWorkspaceId) {
       const source: BrowserFindSource = {
@@ -173,22 +167,13 @@ export function forwardGuestShortcutInput(
       // Why: active browser splits share one renderer; preserve the registered guest owner so only its Find bar opens.
       renderer.send('ui:findInBrowserPage', source)
     }
-  } else if (
-    !chromelessGuest &&
-    keybindingMatchesAction('browser.back', input, process.platform, keybindings)
-  ) {
+  } else if (keybindingMatchesAction('browser.back', input, process.platform, keybindings)) {
     // Why: macOS Logitech side-button remaps arrive as history keystrokes, not mouse events; forward so the renderer can goBack().
     renderer.send('ui:browserHistoryNavigate', 'back')
-  } else if (
-    !chromelessGuest &&
-    keybindingMatchesAction('browser.forward', input, process.platform, keybindings)
-  ) {
+  } else if (keybindingMatchesAction('browser.forward', input, process.platform, keybindings)) {
     // Why: same as browser.back; the focused guest cannot call the renderer-owned webview's goForward() directly.
     renderer.send('ui:browserHistoryNavigate', 'forward')
-  } else if (
-    !chromelessGuest &&
-    keybindingMatchesAction('tab.close', input, process.platform, keybindings)
-  ) {
+  } else if (keybindingMatchesAction('tab.close', input, process.platform, keybindings)) {
     if (isFloatingGuest) {
       renderer.send('ui:closeFloatingItem', { sourceId: browserTabId })
     } else {
