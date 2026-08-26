@@ -143,6 +143,8 @@ export type PersistedUIState = {
   browserDefaultUrl?: string | null
   codeServerUrl?: string | null
   devinCloudUrl?: string | null
+  /** Render new user-created browser tabs on this device even when the paired runtime could host them. */
+  browserPreferLocalRendering?: boolean
   browserDefaultSearchEngine?: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null
   /** Electron browser zoom level applied when a new local browser tab is created. */
   browserDefaultZoomLevel?: number

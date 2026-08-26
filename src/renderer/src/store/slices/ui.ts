@@ -1026,6 +1026,9 @@ export type UISlice = {
   setCodeServerUrl: (url: string | null) => void
   devinCloudUrl: string | null
   setDevinCloudUrl: (url: string | null) => void
+  /** Render new user-created browser tabs on this device even when the paired runtime could host them. */
+  browserPreferLocalRendering: boolean
+  setBrowserPreferLocalRendering: (preferLocal: boolean) => void
   browserDefaultSearchEngine: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null
   setBrowserDefaultSearchEngine: (engine: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null) => void
   browserDefaultZoomLevel: number
@@ -2595,6 +2598,7 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (set, get)
         browserDefaultUrl: ui.browserDefaultUrl ?? null,
         codeServerUrl: ui.codeServerUrl ?? null,
         devinCloudUrl: ui.devinCloudUrl ?? null,
+        browserPreferLocalRendering: ui.browserPreferLocalRendering === true,
         browserDefaultSearchEngine: ui.browserDefaultSearchEngine ?? null,
         browserDefaultZoomLevel: normalizeBrowserPageZoomLevel(ui.browserDefaultZoomLevel),
         browserKagiSessionLink: normalizeKagiSessionLink(ui.browserKagiSessionLink ?? ''),
@@ -2746,6 +2750,11 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (set, get)
   setDevinCloudUrl: (url) => {
     void window.api.ui.set({ devinCloudUrl: url }).catch(console.error)
     set({ devinCloudUrl: url })
+  },
+  browserPreferLocalRendering: false,
+  setBrowserPreferLocalRendering: (preferLocal) => {
+    void window.api.ui.set({ browserPreferLocalRendering: preferLocal }).catch(console.error)
+    set({ browserPreferLocalRendering: preferLocal })
   },
   browserDefaultSearchEngine: null,
   setBrowserDefaultSearchEngine: (engine) => {

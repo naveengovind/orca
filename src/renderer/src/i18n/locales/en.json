@@ -11370,6 +11370,10 @@
           "devinTitle": "Devin (Cloud) URL",
           "devinDescription": "URL the Devin (Cloud) tab opens. Leave empty for the default.",
           "devinSaved": "Devin (Cloud) URL saved."
+        },
+        "BrowserLocalRenderingSetting": {
+          "title": "Open Browser Tabs Locally",
+          "description": "Render new browser tabs on this device instead of the remote Orca server. Existing remote tabs stay remote. Pages served only on the server (e.g. its localhost ports) need a port forward."
         }
       },
       "right": {

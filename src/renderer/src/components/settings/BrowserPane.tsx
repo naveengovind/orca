@@ -12,6 +12,7 @@ import { getBrowserLinkRoutingDescription } from './browser-link-routing-copy'
 import { getBrowserUsePaneSearchEntries } from './browser-use-search'
 import { getBrowserPaneCombinedSearchEntries } from './browser-pane-search'
 import { BrowserHomePageSetting } from './BrowserHomePageSetting'
+import { BrowserLocalRenderingSetting } from './BrowserLocalRenderingSetting'
 import { BrowserDefaultZoomSetting } from './BrowserDefaultZoomSetting'
 import { BrowserUseSetup } from './BrowserUsePane'
 import { BrowserSearchEngineSetting } from './BrowserSearchEngineSetting'
@@ -281,6 +282,8 @@ export function BrowserPane({
           setDevinCloudUrlDraft(url ?? '')
         }}
       />
+
+      <BrowserLocalRenderingSetting />
 
       {showSearchEngine ? (
         <BrowserSearchEngineSetting

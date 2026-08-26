@@ -247,6 +247,7 @@ const UiUpdateFields = z
     browserDefaultUrl: NullableString.optional(),
     codeServerUrl: NullableString.optional(),
     devinCloudUrl: NullableString.optional(),
+    browserPreferLocalRendering: z.boolean().optional(),
     browserDefaultSearchEngine: z
       .enum(['google', 'duckduckgo', 'bing', 'kagi'])
       .nullable()
