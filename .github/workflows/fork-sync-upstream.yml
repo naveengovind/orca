@@ -1,0 +1,67 @@
+name: Fork Sync Upstream
+
+# Fork-only workflow: merges stablyai/orca main into code-server-tab every
+# 15 minutes when it moved, then triggers a release build. Conflict or build
+# failure stops the chain silently — the next run retries.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build even if code-server-tab is already up to date
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      merged: ${{ steps.merge.outputs.merged }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: code-server-tab
+          fetch-depth: 0
+
+      - name: Merge upstream main
+        id: merge
+        env:
+          FORCED: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git remote add upstream https://github.com/stablyai/orca.git
+          git fetch upstream main
+          behind="$(git rev-list --count HEAD..upstream/main)"
+          echo "behind=$behind"
+          if [[ "$behind" == "0" && "$FORCED" != "true" ]]; then
+            echo "merged=false" >>"$GITHUB_OUTPUT"
+            echo "code-server-tab is up to date; skipping."
+            exit 0
+          fi
+          if ! git merge upstream/main --no-edit; then
+            git merge --abort || true
+            echo "::warning::Merge conflict with upstream main; skipping this run."
+            echo "merged=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git push origin code-server-tab
+          echo "merged=true" >>"$GITHUB_OUTPUT"
+
+  release:
+    needs: sync
+    if: needs.sync.outputs.merged == 'true'
+    uses: ./.github/workflows/fork-mac-arm64-release.yml

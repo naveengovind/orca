@@ -20,3 +20,7 @@ declare const ORCA_POSTHOG_WRITE_KEY: string | null
 // point a packaged build at a staging server without re-running the
 // release pipeline.
 declare const ORCA_DIAGNOSTICS_TOKEN_URL: string | null
+
+// Fork override: the fork's release repo (e.g. "naveengovind/orca"), baked in
+// at compile time. Null on upstream builds, which then use stablyai/orca.
+declare const ORCA_RELEASE_REPO_OVERRIDE: string | null

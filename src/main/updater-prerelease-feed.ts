@@ -2,15 +2,21 @@ import { net } from 'electron'
 import { parse } from 'yaml'
 import { compareVersions, isPrereleaseVersion, isValidVersion } from './updater-fallback'
 
-const ATOM_FEED_URL = 'https://github.com/stablyai/orca/releases.atom'
-const RELEASES_DOWNLOAD_BASE = 'https://github.com/stablyai/orca/releases/download'
+// Fork override: a fork build bakes its own release repo into the packaged
+// app so the updater tracks the fork's releases instead of upstream's.
+const RELEASE_REPO = ORCA_RELEASE_REPO_OVERRIDE ?? 'stablyai/orca'
+const ATOM_FEED_URL = `https://github.com/${RELEASE_REPO}/releases.atom`
+const RELEASES_DOWNLOAD_BASE = `https://github.com/${RELEASE_REPO}/releases/download`
 const FETCH_TIMEOUT_MS = 5000
 const MAX_MANIFEST_PROBE_CANDIDATES = 6
 
 // Why: GitHub's atom feed lists every release (prerelease or stable) in a
 // single flat list. Each entry has a /releases/tag/<tag> URL we can mine
 // without any channel filtering.
-const TAG_HREF_RE = /href="https:\/\/github\.com\/stablyai\/orca\/releases\/tag\/([^"]+)"/g
+const TAG_HREF_RE = new RegExp(
+  `href="https:\\/\\/github\\.com\\/${RELEASE_REPO.replace('/', '\\/')}\\/releases\\/tag\\/([^"]+)"`,
+  'g'
+)
 
 export function getReleaseDownloadUrl(tag: string): string {
   return `${RELEASES_DOWNLOAD_BASE}/${encodeURIComponent(tag)}`
