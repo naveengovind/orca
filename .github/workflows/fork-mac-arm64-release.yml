@@ -29,6 +29,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # Why: when called from fork-sync-upstream the caller runs on main,
+          # and actions/checkout defaults to the caller's ref — which would
+          # build main, not the code-server-tab branch the release is for.
+          ref: code-server-tab
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
