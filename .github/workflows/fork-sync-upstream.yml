@@ -1,19 +1,14 @@
 name: Fork Sync Upstream
 
-# Fork-only workflow: merges stablyai/orca main into code-server-tab every
-# 15 minutes when it moved, then triggers a release build. Conflict or build
-# failure stops the chain silently — the next run retries.
+# Fork-only workflow: merges stablyai/orca main into this fork's main every
+# 15 minutes when it moved. The resulting push to main triggers the release
+# build (fork-mac-arm64-release.yml runs on push). A merge conflict stops the
+# run silently — the next scheduled run retries.
 
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
-    inputs:
-      force:
-        description: Build even if code-server-tab is already up to date
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: write
@@ -26,13 +21,11 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      merged: ${{ steps.merge.outputs.merged }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          ref: code-server-tab
+          ref: main
           fetch-depth: 0
           # Why: the default GITHUB_TOKEN cannot push changes to workflow files
           # (.github/workflows/*), which upstream edits regularly. A PAT with
@@ -40,9 +33,6 @@ jobs:
           token: ${{ secrets.SYNC_PAT }}
 
       - name: Merge upstream main
-        id: merge
-        env:
-          FORCED: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
@@ -51,21 +41,13 @@ jobs:
           git fetch upstream main
           behind="$(git rev-list --count HEAD..upstream/main)"
           echo "behind=$behind"
-          if [[ "$behind" == "0" && "$FORCED" != "true" ]]; then
-            echo "merged=false" >>"$GITHUB_OUTPUT"
-            echo "code-server-tab is up to date; skipping."
+          if [[ "$behind" == "0" ]]; then
+            echo "main is up to date; skipping."
             exit 0
           fi
           if ! git merge upstream/main --no-edit; then
             git merge --abort || true
             echo "::warning::Merge conflict with upstream main; skipping this run."
-            echo "merged=false" >>"$GITHUB_OUTPUT"
             exit 0
           fi
-          git push origin code-server-tab
-          echo "merged=true" >>"$GITHUB_OUTPUT"
-
-  release:
-    needs: sync
-    if: needs.sync.outputs.merged == 'true'
-    uses: ./.github/workflows/fork-mac-arm64-release.yml
+          git push origin main

@@ -6,6 +6,9 @@ name: Fork macOS arm64 Release
 #   xattr -dr com.apple.quarantine /Applications/Orca.app
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       tag:
@@ -29,11 +32,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        # Why: releases build from main. On push, actions/checkout already
+        # defaults to the pushed ref (main); pinning ref: main also covers
+        # workflow_dispatch / workflow_call so they never build a stale ref.
         with:
-          # Why: when called from fork-sync-upstream the caller runs on main,
-          # and actions/checkout defaults to the caller's ref — which would
-          # build main, not the code-server-tab branch the release is for.
-          ref: code-server-tab
+          ref: main
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -94,7 +97,7 @@ jobs:
           if [ -z "$tag" ]; then
             tag="v${{ steps.build.outputs.version }}"
           fi
-          notes="Unsigned macOS arm64 build of the code-server-tab branch (chromeless code-server tab, Mod+Shift+C).
+          notes="Unsigned macOS arm64 build of this fork's main branch (chromeless embedded tabs, local browser rendering, fork auto-updates).
 
           After installing, clear Gatekeeper quarantine once:
           \`xattr -dr com.apple.quarantine /Applications/Orca.app\`
