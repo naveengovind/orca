@@ -34,6 +34,10 @@ jobs:
         with:
           ref: code-server-tab
           fetch-depth: 0
+          # Why: the default GITHUB_TOKEN cannot push changes to workflow files
+          # (.github/workflows/*), which upstream edits regularly. A PAT with
+          # the `workflow` scope can.
+          token: ${{ secrets.SYNC_PAT }}
 
       - name: Merge upstream main
         id: merge
