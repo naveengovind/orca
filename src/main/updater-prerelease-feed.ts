@@ -4,7 +4,12 @@ import { compareVersions, isPrereleaseVersion, isValidVersion } from './updater-
 
 // Fork override: a fork build bakes its own release repo into the packaged
 // app so the updater tracks the fork's releases instead of upstream's.
-const RELEASE_REPO = ORCA_RELEASE_REPO_OVERRIDE ?? 'stablyai/orca'
+// Guarded for vitest, where the compile-time define is not substituted.
+const RELEASE_REPO =
+  (typeof ORCA_RELEASE_REPO_OVERRIDE !== 'undefined'
+    ? ORCA_RELEASE_REPO_OVERRIDE
+    : ((globalThis as { ORCA_RELEASE_REPO_OVERRIDE?: string | null }).ORCA_RELEASE_REPO_OVERRIDE ??
+      null)) ?? 'stablyai/orca'
 const ATOM_FEED_URL = `https://github.com/${RELEASE_REPO}/releases.atom`
 const RELEASES_DOWNLOAD_BASE = `https://github.com/${RELEASE_REPO}/releases/download`
 const FETCH_TIMEOUT_MS = 5000
@@ -248,8 +253,13 @@ export async function fetchNewerReleaseTagsWithReadiness(
     ({ readiness, version }) =>
       readiness === 'ready' && compareVersions(version, currentVersion) > 0
   )
+  // Why: a transient failure (timeout / non-404 / network blip) probing the
+  // newest tag must not hard-fail the whole check when an older tag probed
+  // ready — otherwise one flaky request reads as "Unable to find latest
+  // version". Only surface 'unavailable' when nothing probed ready at all.
+  const anyReady = manifestResults.some(({ readiness }) => readiness === 'ready')
   if (primaryIndex === -1) {
-    if (manifestResults[0]?.readiness === 'unavailable') {
+    if (!anyReady && manifestResults[0]?.readiness === 'unavailable') {
       return { tags: [], state: 'unavailable', unavailableReason: 'manifest' }
     }
     const lastGoodTag = manifestResults.find(({ readiness }) => readiness === 'ready')?.tag
@@ -259,7 +269,7 @@ export async function fetchNewerReleaseTagsWithReadiness(
   }
 
   if (primaryIndex > 0) {
-    if (manifestResults[0]?.readiness === 'unavailable') {
+    if (!anyReady && manifestResults[0]?.readiness === 'unavailable') {
       return { tags: [], state: 'unavailable', unavailableReason: 'manifest' }
     }
     return { tags: [], state: 'not-ready', lastGoodTag: manifestResults[primaryIndex].tag }
