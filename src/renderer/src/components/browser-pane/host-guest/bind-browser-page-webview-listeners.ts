@@ -74,6 +74,7 @@ export function bindBrowserPageWebviewListeners({
       workspaceId,
       worktreeId,
       sessionProfileId,
+      chromelessRef: args.chromelessRef,
       webviewRef,
       isPaintableRef,
       guestRecoveryPendingRef,

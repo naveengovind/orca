@@ -509,6 +509,25 @@ describe('setupGuestShortcutForwarding', () => {
     }
   })
 
+  it('lets a chromeless guest keep Ctrl+Tab (its own editor switcher)', () => {
+    setupGuestShortcutForwarding({
+      browserTabId,
+      guest: makeGuest(),
+      resolveRenderer: () => makeRenderer(),
+      isChromelessGuest: () => true
+    })
+
+    const preventDefault = triggerBeforeInput({
+      code: 'Tab',
+      key: 'Tab',
+      control: true,
+      meta: false
+    })
+
+    expect(preventDefault).not.toHaveBeenCalled()
+    expect(rendererSendMock).not.toHaveBeenCalled()
+  })
+
   it('forwards browser page zoom shortcuts from focused guest pages', () => {
     setupGuestShortcutForwarding({
       browserTabId,

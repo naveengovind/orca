@@ -22,6 +22,7 @@ import type {
   WorktreeCardProperty
 } from './ui-chrome-types'
 import type { WorkspaceStatusDefinition } from './worktree/types'
+import type { PersistedAutomationHostFilter } from './automation-host-filter'
 
 export type PersistedUIState = {
   lastActiveRepoId: string | null
@@ -49,6 +50,8 @@ export type PersistedUIState = {
   visibleWorkspaceHostIds?: VisibleWorkspaceHostIds
   /** User-defined sidebar order for host sections; missing/new hosts append in discovered order. */
   workspaceHostOrder?: WorkspaceHostOrder
+  /** Automations page host filter. Stores only a canonical host key; invalid values degrade to all hosts. */
+  automationHostFilter?: PersistedAutomationHostFilter
   /** Desktop-owned all-host repo order; host-qualified identities keep a manual cross-host interleaving while each host owns its local permutation. */
   manualRepoOrder?: ManualRepoOrderEntry[]
   /** Deprecated legacy positive-form setting. Ignored on hydration. */
@@ -141,6 +144,10 @@ export type PersistedUIState = {
   usageEmptyStateDismissed?: boolean
   /** URL for new browser tabs; null = blank tab. */
   browserDefaultUrl?: string | null
+  codeServerUrl?: string | null
+  devinCloudUrl?: string | null
+  /** Render new user-created browser tabs on this device even when the paired runtime could host them. */
+  browserPreferLocalRendering?: boolean
   browserDefaultSearchEngine?: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null
   /** Electron browser zoom level applied when a new local browser tab is created. */
   browserDefaultZoomLevel?: number

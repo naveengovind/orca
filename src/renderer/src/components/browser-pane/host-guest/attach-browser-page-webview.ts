@@ -25,6 +25,7 @@ export type AttachBrowserPageWebviewArgs = {
   workspaceId: string
   worktreeId: string
   sessionProfileId: string | null
+  chromelessRef: MutableRefObject<boolean>
   webviewPartition: string
   isActive: boolean
   isPaintable: boolean

@@ -168,6 +168,8 @@ export function createWebUiApi(): NonNullable<Partial<PreloadApi>['ui']> {
     onJumpToTabIndex: () => noopUnsubscribe,
     onWorktreeHistoryNavigate: () => noopUnsubscribe,
     onNewBrowserTab: () => noopUnsubscribe,
+    onNewCodeServerTab: () => noopUnsubscribe,
+    onNewDevinCloudTab: () => noopUnsubscribe,
     onNewMarkdownTab: () => noopUnsubscribe,
     onNewSimulatorTab: () => noopUnsubscribe,
     onRequestTabCreate: () => noopUnsubscribe,

@@ -90,6 +90,12 @@ import {
 } from '../../../../shared/browser-page-zoom'
 import { persistedUIValuesEqual } from '../../../../shared/persisted-ui-equality'
 import {
+  ALL_AUTOMATION_HOSTS_FILTER,
+  parsePersistedAutomationHostFilter,
+  toPersistedAutomationHostFilter,
+  type AutomationHostFilter
+} from '../../../../shared/automation-host-filter'
+import {
   normalizeExecutionHostOrder,
   normalizeExecutionHostScope,
   normalizeVisibleExecutionHostIds,
@@ -897,6 +903,9 @@ export type UISlice = {
   setVisibleWorkspaceHostIds: (ids: VisibleWorkspaceHostIds) => void
   workspaceHostOrder: WorkspaceHostOrder
   setWorkspaceHostOrder: (ids: WorkspaceHostOrder) => void
+  /** Automations page host filter, in stable form. Never written from an unhydrated catalog. */
+  automationHostFilter: AutomationHostFilter
+  setAutomationHostFilter: (filter: AutomationHostFilter) => void
   manualRepoOrder: ManualRepoOrderEntry[]
   hideDefaultBranchWorkspace: boolean
   setHideDefaultBranchWorkspace: (v: boolean) => void
@@ -1022,6 +1031,13 @@ export type UISlice = {
   /** URL opened when a new browser tab is created. Null = blank tab (default). */
   browserDefaultUrl: string | null
   setBrowserDefaultUrl: (url: string | null) => void
+  codeServerUrl: string | null
+  setCodeServerUrl: (url: string | null) => void
+  devinCloudUrl: string | null
+  setDevinCloudUrl: (url: string | null) => void
+  /** Render new user-created browser tabs on this device even when the paired runtime could host them. */
+  browserPreferLocalRendering: boolean
+  setBrowserPreferLocalRendering: (preferLocal: boolean) => void
   browserDefaultSearchEngine: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null
   setBrowserDefaultSearchEngine: (engine: 'google' | 'duckduckgo' | 'bing' | 'kagi' | null) => void
   browserDefaultZoomLevel: number
@@ -2116,6 +2132,13 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (set, get)
     set({ workspaceHostOrder })
     window.api.ui.set({ workspaceHostOrder }).catch(console.error)
   },
+  automationHostFilter: ALL_AUTOMATION_HOSTS_FILTER,
+  setAutomationHostFilter: (filter) => {
+    window.api.ui
+      .set({ automationHostFilter: toPersistedAutomationHostFilter(filter) })
+      .catch(console.error)
+    set({ automationHostFilter: filter })
+  },
   manualRepoOrder: [],
 
   hideDefaultBranchWorkspace: false,
@@ -2530,6 +2553,8 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (set, get)
         workspaceHostScope: normalizeExecutionHostScope(ui.workspaceHostScope),
         visibleWorkspaceHostIds: normalizeHydratedVisibleWorkspaceHostIds(ui),
         workspaceHostOrder: normalizeExecutionHostOrder(ui.workspaceHostOrder),
+        // Why: a malformed or legacy filter value must degrade to All hosts, never throw during hydration.
+        automationHostFilter: parsePersistedAutomationHostFilter(ui.automationHostFilter),
         manualRepoOrder,
         // Why: apply the desktop-owned overlay immediately since UI state can arrive after a catalog or from another client.
         repos: orderedRepos,
@@ -2589,6 +2614,9 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (set, get)
         updateReassuranceSeen: ui.updateReassuranceSeen ?? false,
         osc52ClipboardDefaultOnNoticePending: ui.osc52ClipboardDefaultOnNoticePending === true,
         browserDefaultUrl: ui.browserDefaultUrl ?? null,
+        codeServerUrl: ui.codeServerUrl ?? null,
+        devinCloudUrl: ui.devinCloudUrl ?? null,
+        browserPreferLocalRendering: ui.browserPreferLocalRendering === true,
         browserDefaultSearchEngine: ui.browserDefaultSearchEngine ?? null,
         browserDefaultZoomLevel: normalizeBrowserPageZoomLevel(ui.browserDefaultZoomLevel),
         browserKagiSessionLink: normalizeKagiSessionLink(ui.browserKagiSessionLink ?? ''),
@@ -2730,6 +2758,21 @@ export const createUISlice: StateCreator<AppState, [], [], UISlice> = (set, get)
   setBrowserDefaultUrl: (url) => {
     void window.api.ui.set({ browserDefaultUrl: url }).catch(console.error)
     set({ browserDefaultUrl: url })
+  },
+  codeServerUrl: null,
+  setCodeServerUrl: (url) => {
+    void window.api.ui.set({ codeServerUrl: url }).catch(console.error)
+    set({ codeServerUrl: url })
+  },
+  devinCloudUrl: null,
+  setDevinCloudUrl: (url) => {
+    void window.api.ui.set({ devinCloudUrl: url }).catch(console.error)
+    set({ devinCloudUrl: url })
+  },
+  browserPreferLocalRendering: false,
+  setBrowserPreferLocalRendering: (preferLocal) => {
+    void window.api.ui.set({ browserPreferLocalRendering: preferLocal }).catch(console.error)
+    set({ browserPreferLocalRendering: preferLocal })
   },
   browserDefaultSearchEngine: null,
   setBrowserDefaultSearchEngine: (engine) => {

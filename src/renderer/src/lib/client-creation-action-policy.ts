@@ -32,6 +32,10 @@ export function resolveClientCreationActionPolicy(args: {
   surface: 'electron' | 'paired-web'
   runtimeStatus: Pick<RuntimeStatus, 'capabilities' | 'hostPlatform'> | null
   floatingWorkspace?: boolean
+  // Electron-only preference: render new browser tabs on this device even
+  // when the paired runtime could host them. Existing remote-owned tabs stay
+  // remote; the web client cannot render locally so it ignores this.
+  preferLocalBrowser?: boolean
 }): ClientCreationActionPolicy {
   const browserStreamingAvailable = args.runtimeStatus?.capabilities?.includes(
     BROWSER_SCREENCAST_RUNTIME_CAPABILITY
@@ -41,7 +45,10 @@ export function resolveClientCreationActionPolicy(args: {
     return {
       'managed-browser': {
         state: 'enabled',
-        provider: browserStreamingAvailable ? 'paired-runtime' : 'local-client'
+        provider:
+          browserStreamingAvailable && args.preferLocalBrowser !== true
+            ? 'paired-runtime'
+            : 'local-client'
       },
       'mobile-emulator': { state: 'enabled', provider: 'local-client' }
     }
@@ -75,7 +82,8 @@ export function getClientCreationActionPolicy(
   return resolveClientCreationActionPolicy({
     surface: isPairedWebClientWindow() ? 'paired-web' : 'electron',
     runtimeStatus,
-    floatingWorkspace
+    floatingWorkspace,
+    preferLocalBrowser: state.browserPreferLocalRendering === true
   })
 }
 

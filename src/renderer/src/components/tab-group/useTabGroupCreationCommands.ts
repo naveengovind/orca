@@ -81,6 +81,22 @@ export function useTabGroupCreationCommands({
         toast.error(error instanceof Error ? error.message : String(error))
       })
     },
+    newCodeServerTab: () => {
+      void useAppStore
+        .getState()
+        .openCodeServerTabInActiveWorkspace()
+        .catch((error) => {
+          toast.error(error instanceof Error ? error.message : String(error))
+        })
+    },
+    newDevinCloudTab: () => {
+      void useAppStore
+        .getState()
+        .openDevinCloudTabInActiveWorkspace()
+        .catch((error) => {
+          toast.error(error instanceof Error ? error.message : String(error))
+        })
+    },
     newSimulatorTab: worktreeState.mobileEmulatorEnabled
       ? () => {
           if (getSimulatorTabForWorktree(worktreeId)) {

@@ -31,6 +31,7 @@ export function setupGuestShortcutForwarding(args: {
   // Why: a floating-panel guest owns a distinct workspace; its close/index chords must route to the panel, not the main tab strip.
   resolveWorktreeId?: (browserTabId: string) => string | null
   resolveWorkspaceId?: (browserTabId: string) => string | null
+  isChromelessGuest?: (browserTabId: string) => boolean
 }): () => void {
   const {
     browserTabId,
@@ -40,7 +41,8 @@ export function setupGuestShortcutForwarding(args: {
     isMobileEmulatorEnabled,
     getKeybindings,
     resolveWorktreeId,
-    resolveWorkspaceId
+    resolveWorkspaceId,
+    isChromelessGuest
   } = args
   let ctrlTabSwitching = false
   const doubleTapDetector = new ModifierDoubleTapDetector()
@@ -63,12 +65,17 @@ export function setupGuestShortcutForwarding(args: {
     getKeybindings,
     resolveWorktreeId,
     resolveWorkspaceId,
+    isChromelessGuest,
     forwardBrowserPageZoom
   }
 
   const handler = (event: Electron.Event, input: Electron.Input): void => {
     const keybindings = getKeybindings?.()
+    // Why: chromeless guests own the entire keyboard (see
+    // forwardGuestShortcutInput) — Ctrl+Tab is VS Code's editor switcher.
+    const chromelessGuest = isChromelessGuest?.(browserTabId) === true
     if (
+      !chromelessGuest &&
       input.type === 'keyDown' &&
       matchesRecentTabSwitcherChord(input, process.platform, keybindings)
     ) {
@@ -129,6 +136,10 @@ export function setupGuestShortcutForwarding(args: {
     zoomDirection: 'in' | 'out' | 'reset'
   ): void => {
     if (zoomDirection !== 'in' && zoomDirection !== 'out') {
+      return
+    }
+    // Why: chromeless guests own zoom too — let Electron's native zoom apply to the page.
+    if (isChromelessGuest?.(browserTabId) === true) {
       return
     }
     // Why: some layouts/platforms turn Ctrl/Cmd +/- into Electron's native zoom before before-input-event reaches the guest.

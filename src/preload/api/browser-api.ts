@@ -56,6 +56,7 @@ export type BrowserApi = {
     workspaceId: string
     worktreeId: string
     sessionProfileId?: string | null
+    chromeless?: boolean
     webContentsId: number
   }) => Promise<boolean>
   isGuestRegistered: (args: { browserPageId: string; webContentsId: number }) => Promise<boolean>
@@ -64,9 +65,11 @@ export type BrowserApi = {
     workspaceId: string
     worktreeId: string
     sessionProfileId?: string | null
+    chromeless?: boolean
     webContentsId: number
   }) => Promise<boolean>
   unregisterGuest: (args: { browserPageId: string }) => Promise<void>
+  setChromeless: (args: { browserPageId: string; chromeless: boolean }) => Promise<boolean>
   onWebAuthnAccountRequest: (
     callback: (request: BrowserWebAuthnAccountRequest) => void
   ) => () => void

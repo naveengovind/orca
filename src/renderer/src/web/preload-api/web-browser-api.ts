@@ -8,6 +8,7 @@ export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> 
     isGuestRegistered: () => Promise.resolve(false),
     repairGuestRegistration: () => Promise.resolve(false),
     unregisterGuest: () => Promise.resolve(),
+    setChromeless: () => Promise.resolve(false),
     openDevTools: () => Promise.resolve(false),
     setViewportOverride: () => Promise.resolve(false),
     setAnnotationViewportBridge: () => Promise.resolve(false),

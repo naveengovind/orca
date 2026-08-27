@@ -141,6 +141,40 @@ describe('parseWorkspaceSession', () => {
     )
   })
 
+  it('preserves the chromeless flag on a browser workspace across hydration', () => {
+    // Without the schema field, zod strips chromeless on restore: the tab
+    // regrows the browser toolbar and loses full-keyboard passthrough.
+    const result = parseWorkspaceSession({
+      activeRepoId: null,
+      activeWorktreeId: null,
+      activeTabId: null,
+      tabsByWorktree: {},
+      terminalLayoutsByTabId: {},
+      browserTabsByWorktree: {
+        wt: [
+          {
+            id: 'browser-1',
+            worktreeId: 'wt',
+            chromeless: true,
+            url: 'http://127.0.0.1:13337/?folder=/x',
+            title: 'code-server',
+            loading: false,
+            faviconUrl: null,
+            canGoBack: false,
+            canGoForward: false,
+            loadError: null,
+            createdAt: 1
+          }
+        ]
+      }
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+    expect(result.value.browserTabsByWorktree?.wt?.[0]?.chromeless).toBe(true)
+  })
+
   it('preserves a valid launchAgent on a terminal tab', () => {
     const result = parseWorkspaceSession({
       activeRepoId: null,

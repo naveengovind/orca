@@ -28,6 +28,9 @@ export type BrowserPageWebviewGuestSessionArgs = {
   workspaceId: string
   worktreeId: string
   sessionProfileId: string | null
+  // Why: a ref, not a boolean — the flag can hydrate after the guest attaches
+  // and registration must always send the current value.
+  chromelessRef: MutableRefObject<boolean>
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   isPaintableRef: MutableRefObject<boolean>
   guestRecoveryPendingRef: MutableRefObject<boolean>
@@ -59,6 +62,7 @@ export function createBrowserPageWebviewGuestSession({
   workspaceId,
   worktreeId,
   sessionProfileId,
+  chromelessRef,
   webviewRef,
   isPaintableRef,
   guestRecoveryPendingRef,
@@ -96,6 +100,7 @@ export function createBrowserPageWebviewGuestSession({
         workspaceId,
         worktreeId,
         sessionProfileId,
+        chromeless: chromelessRef.current,
         webContentsId
       })
       .then((registered) => {
@@ -156,6 +161,7 @@ export function createBrowserPageWebviewGuestSession({
         workspaceId,
         worktreeId,
         sessionProfileId,
+        chromeless: chromelessRef.current,
         webContentsId
       })
     },

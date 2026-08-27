@@ -23,6 +23,10 @@ import {
 } from '@/runtime/client-hosted-browser-close-intents'
 import { FLOATING_TERMINAL_WORKTREE_ID, ORCA_BROWSER_BLANK_URL } from '../../../../shared/constants'
 import { folderWorkspaceKey } from '../../../../shared/workspace-scope'
+import {
+  DEFAULT_CODE_SERVER_URL,
+  DEFAULT_DEVIN_CLOUD_URL
+} from '../../../../shared/embedded-app-urls'
 import { redactKagiSessionToken } from '../../../../shared/browser-url'
 import {
   MAX_BROWSER_HISTORY_ENTRIES,
@@ -85,6 +89,8 @@ type CreateBrowserTabOptions = {
   // Explicit "New Tab" focuses the address bar even with a real home URL; link-opened tabs leave it unset.
   focusAddressBar?: boolean
   browserRuntimeEnvironmentId?: string | null
+  // Render the guest without the browser toolbar row (embedded tool UIs).
+  chromeless?: boolean
 }
 
 type CreateBrowserPageOptions = {
@@ -236,6 +242,8 @@ export type BrowserSlice = {
     options?: CreateBrowserTabOptions
   ) => BrowserWorkspace
   openNewBrowserTabInActiveWorkspace: (groupId: string) => Promise<void>
+  openCodeServerTabInActiveWorkspace: () => Promise<void>
+  openDevinCloudTabInActiveWorkspace: () => Promise<void>
   openBrowserProfileTabInActiveWorkspace: (url: string, profileId: string) => Promise<boolean>
   closeBrowserTab: (tabId: string, options?: { reason?: 'cleanup' }) => void
   shutdownWorktreeBrowsers: (worktreeId: string) => Promise<void>
@@ -635,6 +643,53 @@ function findPage(
   return pageById.get(pageId) ?? null
 }
 
+// Chromeless embedded-app tabs (code-server, Devin Cloud): client-local
+// webviews even on remote-owned worktrees — streamed remote pages would
+// defeat the point, and the app's port must be reachable locally (port
+// forward for remote hosts). Reuse is matched by URL origin so each app
+// keeps one tab per worktree. Web-client windows are refused by
+// createBrowserTab's own materialization guard.
+async function openChromelessAppTabInActiveWorkspace(
+  get: () => AppState,
+  input: { url: string; title: string }
+): Promise<void> {
+  const state = get()
+  const worktreeId = state.activeWorktreeId
+  if (!worktreeId) {
+    return
+  }
+  const targetOrigin = new URL(input.url).origin
+  const existing = (state.browserTabsByWorktree[worktreeId] ?? []).find((tab) => {
+    if (tab.chromeless !== true) {
+      return false
+    }
+    try {
+      return new URL(tab.url).origin === targetOrigin
+    } catch {
+      return false
+    }
+  })
+  if (existing) {
+    const pageId = existing.activePageId ?? existing.pageIds?.[0]
+    if (pageId) {
+      state.focusBrowserTabInWorktree(worktreeId, pageId, { surfacePane: true })
+      return
+    }
+  }
+  const browserAvailability = getClientCreationActionPolicy(state, worktreeId)['managed-browser']
+  if (browserAvailability.state !== 'enabled') {
+    throw new Error(browserAvailability.reason)
+  }
+  const runtimeEnvironmentId = getRuntimeEnvironmentIdForWorktree(state, worktreeId)
+  get().createBrowserTab(worktreeId, input.url, {
+    title: input.title,
+    activate: true,
+    chromeless: true,
+    ...(runtimeEnvironmentId ? { browserRuntimeEnvironmentId: null } : {})
+  })
+  get().recordFeatureInteraction('browser-tab-created')
+}
+
 export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = (set, get) => ({
   browserTabsByWorktree: {},
   browserPagesByWorkspace: {},
@@ -731,14 +786,17 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
         : (get().defaultBrowserSessionProfileIdByHostId[
             getBrowserSessionProfileHostId(get(), worktreeId, options?.browserRuntimeEnvironmentId)
           ] ?? get().defaultBrowserSessionProfileId)
-    const browserTab = buildWorkspaceFromPage(
-      workspaceId,
-      worktreeId,
-      page,
-      [page.id],
-      sessionProfileId,
-      options?.sessionPartition
-    )
+    const browserTab = {
+      ...buildWorkspaceFromPage(
+        workspaceId,
+        worktreeId,
+        page,
+        [page.id],
+        sessionProfileId,
+        options?.sessionPartition
+      ),
+      ...(options?.chromeless ? { chromeless: true } : {})
+    }
 
     set((s) => {
       const existingTabs = s.browserTabsByWorktree[worktreeId] ?? []
@@ -873,6 +931,36 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
       targetGroupId: groupId
     })
     get().recordFeatureInteraction('browser-tab-created')
+  },
+
+  openCodeServerTabInActiveWorkspace: async () => {
+    const state = get()
+    const worktreePath =
+      Object.values(state.worktreesByRepo ?? {})
+        .flat()
+        .find((worktree) => worktree.id === state.activeWorktreeId)?.path ??
+      (state.folderWorkspaces ?? []).find(
+        (workspace) => folderWorkspaceKey(workspace.id) === state.activeWorktreeId
+      )?.folderPath
+    if (state.activeWorktreeId && !worktreePath) {
+      throw new Error('No worktree path is available for a code-server tab.')
+    }
+    const codeServerBaseUrl =
+      (state.codeServerUrl ?? '').trim().replace(/\/+$/, '') || DEFAULT_CODE_SERVER_URL
+    await openChromelessAppTabInActiveWorkspace(get, {
+      url: `${codeServerBaseUrl}/?folder=${worktreePath}`,
+      title: translate('auto.store.slices.browser.codeServerTabTitle', 'code-server')
+    })
+  },
+
+  openDevinCloudTabInActiveWorkspace: async () => {
+    const state = get()
+    const devinCloudBaseUrl =
+      (state.devinCloudUrl ?? '').trim().replace(/\/+$/, '') || DEFAULT_DEVIN_CLOUD_URL
+    await openChromelessAppTabInActiveWorkspace(get, {
+      url: devinCloudBaseUrl,
+      title: translate('auto.store.slices.browser.devinCloudTabTitle', 'Devin')
+    })
   },
 
   openBrowserProfileTabInActiveWorkspace: async (url, profileId) => {
@@ -1157,7 +1245,8 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
         activate: true,
         sessionProfileId,
         sessionPartition,
-        targetGroupId: entryToRestore.position?.groupId
+        targetGroupId: entryToRestore.position?.groupId,
+        chromeless: snap.chromeless
       })
       restoreRecentlyClosedTabPosition(get, worktreeId, restored.id, entryToRestore.position)
       return get().browserTabsByWorktree[worktreeId]?.find((tab) => tab.id === restored.id) ?? null
@@ -1171,7 +1260,8 @@ export const createBrowserSlice: StateCreator<AppState, [], [], BrowserSlice> = 
       sessionProfileId,
       sessionPartition,
       targetGroupId: entryToRestore.position?.groupId,
-      browserRuntimeEnvironmentId: firstPage.browserRuntimeEnvironmentId
+      browserRuntimeEnvironmentId: firstPage.browserRuntimeEnvironmentId,
+      chromeless: snap.chromeless
     })
 
     for (const p of restPages) {

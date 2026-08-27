@@ -33,11 +33,16 @@ const isMacAdhoc = process.env.ORCA_MAC_ADHOC === '1'
 const isWinHourly = process.env.ORCA_WIN_HOURLY === '1'
 const isWinDaily = process.env.ORCA_WIN_DAILY === '1'
 const isWinAdhoc = process.env.ORCA_WIN_ADHOC === '1'
+// Fork-only channel: unsigned fork builds that publish to the fork repo and
+// self-update from it (ORCA_RELEASE_REPO_OVERRIDE is baked into the app).
+const isForkChannel = process.env.ORCA_FORK_CHANNEL === '1'
 const isWinDevChannel = isWinHourly || isWinDaily || isWinAdhoc
 const isMacRelease = process.env.ORCA_MAC_RELEASE === '1' || isMacHourly || isMacDaily || isMacAdhoc
 const isLinuxArm64Release = process.env.ORCA_LINUX_ARM64_RELEASE === '1'
 const localBuildVersion =
-  isMacRelease || isWinDevChannel ? undefined : process.env.ORCA_LOCAL_BUILD_VERSION
+  isMacRelease || isWinDevChannel || isForkChannel
+    ? undefined
+    : process.env.ORCA_LOCAL_BUILD_VERSION
 const isHourlyChannel = isMacHourly || isWinHourly
 const isDailyChannel = isMacDaily || isWinDaily
 const isAdhocChannel = isMacAdhoc || isWinAdhoc
@@ -47,7 +52,9 @@ const devChannelBuildVersion = isHourlyChannel
     ? process.env.ORCA_DAILY_BUILD_VERSION
     : isAdhocChannel
       ? process.env.ORCA_ADHOC_BUILD_VERSION
-      : undefined
+      : isForkChannel
+        ? process.env.ORCA_FORK_BUILD_VERSION
+        : undefined
 // Why each dev channel gets its own repo rather than tagging into the main one:
 // the releases atom feed exposes only the 10 newest entries, so 24 hourly tags a
 // day would evict every stable/RC entry and strand users on a feed with nothing
@@ -61,6 +68,8 @@ const devChannelRepo = isHourlyChannel
     : isAdhocChannel
       ? 'orca-adhoc'
       : null
+// Fork builds publish to the fork repo; upstream dev channels keep theirs.
+const forkPublishRepo = process.env.ORCA_FORK_PUBLISH_REPO?.trim() || null
 const appId = 'com.stablyai.orca'
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
@@ -550,12 +559,19 @@ module.exports = {
   // on Intel Macs. The beforeBuild hook performs Orca's targeted rebuild and
   // returns false so electron-builder does not rebuild optional cpu-features.
   npmRebuild: true,
-  publish: {
-    provider: 'github',
-    owner: 'stablyai',
-    repo: devChannelRepo ?? 'orca',
-    releaseType: devChannelRepo ? 'prerelease' : 'release'
-  }
+  publish: isForkChannel
+    ? {
+        provider: 'github',
+        owner: forkPublishRepo?.split('/')[0] ?? 'stablyai',
+        repo: forkPublishRepo?.split('/')[1] ?? 'orca',
+        releaseType: 'prerelease'
+      }
+    : {
+        provider: 'github',
+        owner: 'stablyai',
+        repo: devChannelRepo ?? 'orca',
+        releaseType: devChannelRepo ? 'prerelease' : 'release'
+      }
 }
 
 function chmodUnixCliLaunchers(resourcesDir, electronPlatformName) {

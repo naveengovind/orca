@@ -85,6 +85,14 @@ import {
   type ReleaseChannel
 } from '../shared/release-channel'
 
+// Fork override: the release repo this build tracks, baked in at compile time.
+// Guarded for vitest, where the define is not substituted.
+const RELEASE_REPO =
+  (typeof ORCA_RELEASE_REPO_OVERRIDE !== 'undefined'
+    ? ORCA_RELEASE_REPO_OVERRIDE
+    : ((globalThis as { ORCA_RELEASE_REPO_OVERRIDE?: string | null }).ORCA_RELEASE_REPO_OVERRIDE ??
+      null)) ?? 'stablyai/orca'
+
 type CheckFailureSource = 'event' | 'promise' | 'fallback-promise'
 type MissingManifestPrereleaseFallbackResult = { userInitiated: boolean }
 type PrimaryEventSuppression = { failureKey: string; error: unknown }
@@ -1443,7 +1451,7 @@ async function pinDefaultReleaseFeed(
   } else {
     clearPrereleaseFallbackContext()
     clearPublishingWindowLastGoodCheck()
-    const url = 'https://github.com/stablyai/orca/releases/latest/download'
+    const url = `https://github.com/${RELEASE_REPO}/releases/latest/download`
     console.info(
       `[updater] release feed fallback: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
     )
@@ -2226,7 +2234,7 @@ export function setupAutoUpdater(
   if (activeUpdateSource === 'release') {
     autoUpdater.setFeedURL({
       provider: 'generic',
-      url: 'https://github.com/stablyai/orca/releases/latest/download'
+      url: `https://github.com/${RELEASE_REPO}/releases/latest/download`
     })
   }
 

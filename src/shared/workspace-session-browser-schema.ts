@@ -37,6 +37,10 @@ export const browserWorkspaceSchema: z.ZodType<BrowserWorkspace> = z.object({
   // profile mirror is stale at startup would silently fall back to the shared
   // default partition — reopening the storage leak (#6923) across restarts.
   sessionPartition: z.string().nullable().optional(),
+  // Why: optional so pre-field sessions validate; without it zod strips the
+  // flag on restore and a restored code-server/Devin tab regrows the browser
+  // toolbar and loses full-keyboard passthrough.
+  chromeless: z.boolean().optional(),
   activePageId: z.string().nullable().optional(),
   pageIds: z.array(z.string()).optional(),
   url: z.string(),

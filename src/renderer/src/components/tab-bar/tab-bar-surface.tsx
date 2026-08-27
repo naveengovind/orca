@@ -67,6 +67,8 @@ export function renderTabBarSurface({
     agentLaunchOptions,
     newTerminalShortcut,
     newBrowserShortcut,
+    newCodeServerShortcut,
+    newDevinCloudShortcut,
     newSimulatorShortcut,
     newFileShortcut,
     openMarkdownShortcut
@@ -112,6 +114,8 @@ export function renderTabBarSurface({
     pwshAvailable: windowsTerminalCapabilities.pwshAvailable,
     newTerminalShortcut,
     newBrowserShortcut,
+    newCodeServerShortcut,
+    newDevinCloudShortcut,
     newSimulatorShortcut,
     newFileShortcut,
     openMarkdownShortcut,

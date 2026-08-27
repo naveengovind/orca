@@ -137,7 +137,11 @@ import {
 } from './terminal-pane/terminal-parked-tab-watchers'
 import { isMainTerminalSideEffectAuthorityForPty } from './terminal-pane/terminal-side-effect-facts-handler'
 import { appendUniqueOpenFileIds } from './terminal/unsaved-close-queue'
-import { setWindowCloseRequestHandler } from './window-close-request-coordinator'
+import {
+  runWithWindowCloseCheckpointScope,
+  setWindowCloseRequestHandler
+} from './window-close-request-coordinator'
+import { showShutdownCheckpointFailureToast } from '@/lib/shutdown-checkpoint-failure-toast'
 import {
   findActivityTerminalPortal,
   useActivityTerminalPortals,
@@ -523,8 +527,14 @@ function Terminal(): React.JSX.Element | null {
   const confirmNativeWindowClose = useCallback(() => {
     // Why: capture only after every close guard has committed. A canceled child-
     // process prompt must not consume App's synthetic/native unload guard.
-    const accepted = window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    const accepted = runWithWindowCloseCheckpointScope(() =>
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    )
     if (!accepted) {
+      // Why: a checkpoint-vetoed quit used to die here with no dialog and no log,
+      // leaving SIGKILL as the only exit (#15352). The dirty-file veto publishes
+      // no reason — its deferred dialog flow already gives the user a surface.
+      showShutdownCheckpointFailureToast()
       return
     }
     window.api.ui.confirmWindowClose()
@@ -1680,6 +1690,26 @@ function Terminal(): React.JSX.Element | null {
     })
   }, [activeWorktreeId, createBrowserTab, openNewBrowserTabInActiveWorkspace])
 
+  const handleNewCodeServerTab = useCallback(() => {
+    if (!activeWorktreeId) {
+      return
+    }
+    void useAppStore
+      .getState()
+      .openCodeServerTabInActiveWorkspace()
+      .catch(showClientCreationActionError)
+  }, [activeWorktreeId])
+
+  const handleNewDevinCloudTab = useCallback(() => {
+    if (!activeWorktreeId) {
+      return
+    }
+    void useAppStore
+      .getState()
+      .openDevinCloudTabInActiveWorkspace()
+      .catch(showClientCreationActionError)
+  }, [activeWorktreeId])
+
   const handleOpenEntry = useCallback(async (args: TabCreateEntryArgs) => {
     await openTabBarEntry(args)
   }, [])
@@ -2138,6 +2168,28 @@ function Terminal(): React.JSX.Element | null {
         return
       }
 
+      // Cmd/Ctrl+Shift+C - code-server tab (chromeless embedded editor)
+      if (!e.repeat && matchShortcut('tab.newCodeServer')) {
+        e.preventDefault()
+        notifyTerminalCapture('tab.newCodeServer')
+        if (floatingWorkspaceFocused) {
+          return
+        }
+        handleNewCodeServerTab()
+        return
+      }
+
+      // Cmd/Ctrl+Alt+D - Devin (Cloud) tab (chromeless embedded web app)
+      if (!e.repeat && matchShortcut('tab.newDevinCloud')) {
+        e.preventDefault()
+        notifyTerminalCapture('tab.newDevinCloud')
+        if (floatingWorkspaceFocused) {
+          return
+        }
+        handleNewDevinCloudTab()
+        return
+      }
+
       // Cmd/Ctrl+Shift+E — new mobile emulator tab (macOS only)
       if (!e.repeat && mobileEmulatorEnabled && matchShortcut('tab.newSimulator')) {
         e.preventDefault()
@@ -2338,6 +2390,8 @@ function Terminal(): React.JSX.Element | null {
   }, [
     activeWorktreeId,
     handleNewBrowserTab,
+    handleNewCodeServerTab,
+    handleNewDevinCloudTab,
     handleNewSimulatorTab,
     handleNewFile,
     handleNewTab,
@@ -2486,6 +2540,8 @@ function Terminal(): React.JSX.Element | null {
             onNewTerminalTab={() => handleNewTab()}
             onNewTerminalWithShell={handleNewTab}
             onNewBrowserTab={handleNewBrowserTab}
+            onNewCodeServerTab={handleNewCodeServerTab}
+            onNewDevinCloudTab={handleNewDevinCloudTab}
             onNewSimulatorTab={mobileEmulatorEnabled ? handleNewSimulatorTab : undefined}
             onOpenEntry={handleOpenEntry}
             onNewFileTab={handleNewFile}

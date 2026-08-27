@@ -57,6 +57,13 @@ const ORCA_DIAGNOSTICS_TOKEN_URL_LITERAL =
   typeof orcaDiagnosticsTokenUrl === 'string' && orcaDiagnosticsTokenUrl.length > 0
     ? JSON.stringify(orcaDiagnosticsTokenUrl)
     : 'null'
+// Fork override: bakes the fork's release repo into the packaged app so the
+// updater tracks fork releases instead of upstream's. Null on upstream builds.
+const orcaReleaseRepoOverride = process.env.ORCA_RELEASE_REPO_OVERRIDE
+const ORCA_RELEASE_REPO_OVERRIDE_LITERAL =
+  typeof orcaReleaseRepoOverride === 'string' && orcaReleaseRepoOverride.length > 0
+    ? JSON.stringify(orcaReleaseRepoOverride)
+    : 'null'
 
 function createStartupDiagnosticsBanner(chunkName: string): string {
   return `
@@ -239,12 +246,6 @@ export const electronViteConfig: UserConfig = {
           'main-thread-hang-watchdog-entry': resolve(
             'src/main/hang-watchdog/main-thread-hang-watchdog-entry.ts'
           ),
-          // Why: run under ELECTRON_RUN_AS_NODE while the caller blocks on
-          // spawnSync — codex app-server trust grants need a live event loop
-          // but must finish before a Codex pane launch proceeds.
-          'codex/codex-app-server-grant-entry': resolve(
-            'src/main/codex/codex-app-server-grant-entry.ts'
-          ),
           // Why: electron-vite cleans out/main in dev. The dev CLI imports
           // this path for `orca agent hooks ...`, so it must survive rebuilds.
           'agent-hooks/managed-agent-hook-controls': resolve(
@@ -268,7 +269,8 @@ export const electronViteConfig: UserConfig = {
     define: {
       ORCA_BUILD_IDENTITY: ORCA_BUILD_IDENTITY_LITERAL,
       ORCA_POSTHOG_WRITE_KEY: ORCA_POSTHOG_WRITE_KEY_LITERAL,
-      ORCA_DIAGNOSTICS_TOKEN_URL: ORCA_DIAGNOSTICS_TOKEN_URL_LITERAL
+      ORCA_DIAGNOSTICS_TOKEN_URL: ORCA_DIAGNOSTICS_TOKEN_URL_LITERAL,
+      ORCA_RELEASE_REPO_OVERRIDE: ORCA_RELEASE_REPO_OVERRIDE_LITERAL
     },
     // Why: @xterm/headless declares "exports": null in package.json, which
     // prevents Vite's default resolver from finding the CJS entry. Point

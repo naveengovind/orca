@@ -101,6 +101,27 @@ describe('resolveClientCreationActionPolicy', () => {
     ).toEqual({ state: 'hidden', reason: MANAGED_BROWSER_UNAVAILABLE_MESSAGE })
   })
 
+  it('prefers local browser rendering on Electron when the user opts in', () => {
+    const capableHost = runtimeStatus(['browser.screencast.v1'])
+
+    expect(
+      resolveClientCreationActionPolicy({
+        surface: 'electron',
+        runtimeStatus: capableHost,
+        preferLocalBrowser: true
+      })['managed-browser']
+    ).toEqual({ state: 'enabled', provider: 'local-client' })
+
+    // The web client cannot render locally, so the preference is ignored.
+    expect(
+      resolveClientCreationActionPolicy({
+        surface: 'paired-web',
+        runtimeStatus: capableHost,
+        preferLocalBrowser: true
+      })['managed-browser']
+    ).toEqual({ state: 'enabled', provider: 'paired-runtime' })
+  })
+
   it('hides web-client floating browsers and mobile emulators as impossible surfaces', () => {
     const policy = resolveClientCreationActionPolicy({
       surface: 'paired-web',

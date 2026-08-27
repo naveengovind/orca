@@ -20,6 +20,7 @@ export type GuestShortcutForwardContext = {
   getKeybindings?: () => KeybindingOverrides | undefined
   resolveWorktreeId?: (browserTabId: string) => string | null
   resolveWorkspaceId?: (browserTabId: string) => string | null
+  isChromelessGuest?: (browserTabId: string) => boolean
   forwardBrowserPageZoom: (event: Electron.Event, direction: BrowserPageZoomDirection) => void
 }
 
@@ -37,8 +38,15 @@ export function forwardGuestShortcutInput(
     getKeybindings,
     resolveWorktreeId,
     resolveWorkspaceId,
+    isChromelessGuest,
     forwardBrowserPageZoom
   } = ctx
+  // Why: a chromeless guest (embedded tool UI like code-server) owns the
+  // ENTIRE keyboard — every chord reaches the page, none reach Orca. Escape
+  // and reload stay reachable by mouse (tab strip, right-click ▸ Reload).
+  if (isChromelessGuest?.(browserTabId) === true) {
+    return false
+  }
   const keybindings = getKeybindings?.()
   if (action?.type === 'zoom') {
     // Why: focused guest key events never reach the renderer-owned webview ref that applies Orca's page zoom.
@@ -121,6 +129,12 @@ export function forwardGuestShortcutInput(
   const isFloatingGuest = resolveWorktreeId?.(browserTabId) === FLOATING_TERMINAL_WORKTREE_ID
   if (keybindingMatchesAction('tab.newBrowser', input, process.platform, keybindings)) {
     renderer.send('ui:newBrowserTab')
+  } else if (keybindingMatchesAction('tab.newCodeServer', input, process.platform, keybindings)) {
+    // Why: the code-server chord must work while its own guest webview is
+    // focused — that is the primary place the user presses it.
+    renderer.send('ui:newCodeServerTab')
+  } else if (keybindingMatchesAction('tab.newDevinCloud', input, process.platform, keybindings)) {
+    renderer.send('ui:newDevinCloudTab')
   } else if (
     process.platform === 'darwin' &&
     (isMobileEmulatorEnabled?.() ?? true) &&
