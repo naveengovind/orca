@@ -8,10 +8,23 @@ export function setupGrabShortcutForwarding(args: {
   resolveRenderer: ResolveRenderer
   hasActiveGrabOp: (browserTabId: string) => boolean
   getKeybindings?: () => KeybindingOverrides | undefined
+  isChromelessGuest?: (browserTabId: string) => boolean
 }): () => void {
-  const { browserTabId, guest, resolveRenderer, hasActiveGrabOp, getKeybindings } = args
+  const {
+    browserTabId,
+    guest,
+    resolveRenderer,
+    hasActiveGrabOp,
+    getKeybindings,
+    isChromelessGuest
+  } = args
   const handler = (event: Electron.Event, input: Electron.Input): void => {
     if (input.type !== 'keyDown') {
+      return
+    }
+    // Why: chromeless guests own the entire keyboard (see
+    // forwardGuestShortcutInput) — grab-mode must never steal their copy.
+    if (isChromelessGuest?.(browserTabId) === true) {
       return
     }
     const bareKey = input.key.toLowerCase()

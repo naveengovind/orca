@@ -2075,7 +2075,8 @@ export class BrowserManager {
         resolveRenderer: (tabId) =>
           resolveRendererWebContents(this.rendererWebContentsIdByTabId, tabId),
         hasActiveGrabOp: (tabId) => this.hasActiveGrabOp(tabId),
-        getKeybindings: () => this.settingsResolver?.().keybindings
+        getKeybindings: () => this.settingsResolver?.().keybindings,
+        isChromelessGuest: (tabId) => this.chromelessByPageId.has(tabId)
       })
     )
   }
