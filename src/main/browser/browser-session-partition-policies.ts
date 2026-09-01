@@ -2,6 +2,11 @@ import { session } from 'electron'
 import type { Session } from 'electron'
 import type { BrowserSessionProfile } from '../../shared/browser-workspace-types'
 import { browserManager } from './browser-manager'
+import { clearProxySessionCredentials } from '../network/proxy-settings'
+import {
+  applyProxyToBrowserSession,
+  invalidateBrowserSessionProxyApplication
+} from './browser-session-proxy'
 import { hasSystemMediaAccess, requestSystemMediaAccess } from './browser-media-access'
 import { isAutoGrantedBrowserSessionPermission } from './browser-session-permission-policy'
 import { cleanElectronUserAgent, setupClientHintsOverride } from './browser-session-ua'
@@ -15,6 +20,11 @@ import { noticeDocPreviewDownloadBlocked } from './doc-preview-download-block-no
 
 // Why: one shared installer keeps every partition's deny-by-default permission/download policies from drifting apart.
 const configuredPartitions = new Set<string>()
+
+/** Drop only the installer memo; retired-session guards remain fail-closed. */
+export function forgetBrowserSessionPartitionConfiguration(partition: string): void {
+  configuredPartitions.delete(partition)
+}
 const handleWillDownload = (
   _event: Electron.Event,
   item: Electron.DownloadItem,
@@ -57,16 +67,28 @@ function resolvePermissionNoticeUrl(
 
 /** `route` hands the item to the owning page's download flow; `deny` cancels it before it starts. */
 export type BrowserPartitionDownloadPolicy = 'route' | 'deny'
+export type BrowserPartitionPermissionPolicy = 'browser' | 'deny'
 
 export function installBrowserSessionPartitionPolicies(
   profile: BrowserSessionProfile,
-  options?: { downloads?: BrowserPartitionDownloadPolicy }
-): void {
+  options: {
+    downloads?: BrowserPartitionDownloadPolicy
+    permissions?: BrowserPartitionPermissionPolicy
+    applyAppWideProxy?: boolean
+  } = {}
+): Promise<void> {
   const { partition } = profile
   const sess = session.fromPartition(partition)
   setBrowserSessionUserAgentMode(sess, profile.userAgentMode ?? 'clean')
+  // Why: route partitions own a SOCKS transport policy that the app proxy must not overwrite.
+  const proxyReady = (
+    options.applyAppWideProxy === false ? Promise.resolve() : applyProxyToBrowserSession(sess)
+  ).catch((error: unknown) => {
+    clearProxySessionCredentials(sess)
+    throw error
+  })
   if (configuredPartitions.has(partition)) {
-    return
+    return proxyReady
   }
 
   browserManager.installCertificateRequestGuard(sess)
@@ -75,57 +97,63 @@ export function installBrowserSessionPartitionPolicies(
     sess.setUserAgent(cleanUA)
     setupClientHintsOverride(sess, cleanUA)
   }
-  sess.setPermissionRequestHandler((webContents, permission, callback, details) => {
-    // Why: defer media to macOS TCC; denying at the session layer throws NotAllowedError even after the user granted Camera/Mic to the OS.
-    if (permission === 'media') {
-      // Capture before async handling; opaque frames cannot be attributed to a named site.
-      const rawUrl = resolvePermissionNoticeUrl(webContents, details)
-      void requestSystemMediaAccess(
-        details as Electron.MediaAccessPermissionRequest | undefined
-      ).then(
-        (granted) => {
-          if (!granted) {
+  if (options?.permissions === 'deny') {
+    sess.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false))
+    sess.setPermissionCheckHandler(() => false)
+    clearBrowserWebAuthnAccessHandlers(sess)
+  } else {
+    sess.setPermissionRequestHandler((webContents, permission, callback, details) => {
+      // Why: defer media to macOS TCC; denying at the session layer throws NotAllowedError even after the user granted Camera/Mic to the OS.
+      if (permission === 'media') {
+        // Capture before async handling; opaque frames cannot be attributed to a named site.
+        const rawUrl = resolvePermissionNoticeUrl(webContents, details)
+        void requestSystemMediaAccess(
+          details as Electron.MediaAccessPermissionRequest | undefined
+        ).then(
+          (granted) => {
+            if (!granted) {
+              browserManager.notifyPermissionDenied({
+                guestWebContentsId: webContents.id,
+                permission,
+                rawUrl
+              })
+            }
+            callback(granted)
+          },
+          (error: unknown) => {
+            console.error('[permissions] Browser media access failed:', error)
             browserManager.notifyPermissionDenied({
               guestWebContentsId: webContents.id,
               permission,
               rawUrl
             })
+            callback(false)
           }
-          callback(granted)
-        },
-        (error: unknown) => {
-          console.error('[permissions] Browser media access failed:', error)
-          browserManager.notifyPermissionDenied({
-            guestWebContentsId: webContents.id,
-            permission,
-            rawUrl
-          })
-          callback(false)
-        }
-      )
-      return
-    }
-    const allowed = isAutoGrantedBrowserSessionPermission(permission)
-    if (!allowed) {
-      const rawUrl = resolvePermissionNoticeUrl(webContents, details)
-      browserManager.notifyPermissionDenied({
-        guestWebContentsId: webContents.id,
-        permission,
-        rawUrl
-      })
-    }
-    callback(allowed)
-  })
-  sess.setPermissionCheckHandler((_webContents, permission, _origin, details) => {
-    if (permission === 'media') {
-      return hasSystemMediaAccess(details?.mediaType)
-    }
-    if (allowsBrowserWebAuthnPermission(permission, details)) {
-      return true
-    }
-    return isAutoGrantedBrowserSessionPermission(permission)
-  })
-  installBrowserWebAuthnAccessHandlers(sess)
+        )
+        return
+      }
+      const allowed = isAutoGrantedBrowserSessionPermission(permission)
+      if (!allowed) {
+        const rawUrl = resolvePermissionNoticeUrl(webContents, details)
+        browserManager.notifyPermissionDenied({
+          guestWebContentsId: webContents.id,
+          permission,
+          rawUrl
+        })
+      }
+      callback(allowed)
+    })
+    sess.setPermissionCheckHandler((_webContents, permission, _origin, details) => {
+      if (permission === 'media') {
+        return hasSystemMediaAccess(details?.mediaType)
+      }
+      if (allowsBrowserWebAuthnPermission(permission, details)) {
+        return true
+      }
+      return isAutoGrantedBrowserSessionPermission(permission)
+    })
+    installBrowserWebAuthnAccessHandlers(sess)
+  }
   sess.setDisplayMediaRequestHandler((_request, callback) => {
     callback({ video: undefined, audio: undefined })
   })
@@ -136,10 +164,12 @@ export function installBrowserSessionPartitionPolicies(
     options?.downloads === 'deny' ? handleDeniedWillDownload : handleWillDownload
   )
   configuredPartitions.add(partition)
+  return proxyReady
 }
 
 export function clearBrowserSessionPartitionPolicies(partition: string, sess: Session): void {
   // Why: the Electron Session survives partition deletion; clear callbacks/listeners so removed profiles don't retain closures.
+  invalidateBrowserSessionProxyApplication(sess)
   configuredPartitions.delete(partition)
   browserManager.removeCertificateRequestGuard(sess)
   sess.removeListener('will-download', handleWillDownload)

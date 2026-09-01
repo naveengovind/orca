@@ -11,6 +11,7 @@ export function createBrowserApi(): NonNullable<Partial<PreloadApi>['browser']> 
     setChromeless: () => Promise.resolve(false),
     openDevTools: () => Promise.resolve(false),
     setViewportOverride: () => Promise.resolve(false),
+    reportViewportScrollState: () => {},
     setAnnotationViewportBridge: () => Promise.resolve(false),
     // A web client never hosts pages, so it has no lease to publish over.
     publishClientPageMetadata: () => Promise.resolve({ status: 'refused' as const }),

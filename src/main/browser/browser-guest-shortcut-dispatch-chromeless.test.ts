@@ -84,6 +84,6 @@ describe('forwardGuestShortcutInput on chromeless guests', () => {
     delete (ctx as { isChromelessGuest?: unknown }).isChromelessGuest
     const handled = forwardGuestShortcutInput(ctx, event, modKey('w', 'KeyW'))
     expect(handled).toBe(true)
-    expect(send).toHaveBeenCalledWith('ui:closeActiveTab')
+    expect(send).toHaveBeenCalledWith('ui:closeActiveTab', { sourceId: 'page-1' })
   })
 })

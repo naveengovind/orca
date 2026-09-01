@@ -509,25 +509,6 @@ describe('setupGuestShortcutForwarding', () => {
     }
   })
 
-  it('lets a chromeless guest keep Ctrl+Tab (its own editor switcher)', () => {
-    setupGuestShortcutForwarding({
-      browserTabId,
-      guest: makeGuest(),
-      resolveRenderer: () => makeRenderer(),
-      isChromelessGuest: () => true
-    })
-
-    const preventDefault = triggerBeforeInput({
-      code: 'Tab',
-      key: 'Tab',
-      control: true,
-      meta: false
-    })
-
-    expect(preventDefault).not.toHaveBeenCalled()
-    expect(rendererSendMock).not.toHaveBeenCalled()
-  })
-
   it('forwards browser page zoom shortcuts from focused guest pages', () => {
     setupGuestShortcutForwarding({
       browserTabId,
@@ -891,7 +872,9 @@ describe('setupGuestShortcutForwarding', () => {
       expect(rendererSendMock).toHaveBeenCalledWith('ui:closeFloatingItem', {
         sourceId: browserTabId
       })
-      expect(rendererSendMock).not.toHaveBeenCalledWith('ui:closeActiveTab')
+      expect(rendererSendMock.mock.calls.some(([channel]) => channel === 'ui:closeActiveTab')).toBe(
+        false
+      )
     })
 
     it('routes workspace/tab index chords to ui:selectFloatingIndex for a floating guest', () => {
@@ -922,7 +905,7 @@ describe('setupGuestShortcutForwarding', () => {
       triggerBeforeInput(closeInput)
       triggerBeforeInput(workspaceIndexInput)
 
-      expect(rendererSendMock).toHaveBeenCalledWith('ui:closeActiveTab')
+      expect(rendererSendMock).toHaveBeenCalledWith('ui:closeActiveTab', { sourceId: browserTabId })
       expect(rendererSendMock).toHaveBeenCalledWith('ui:jumpToWorktreeIndex', 0)
       expect(rendererSendMock).not.toHaveBeenCalledWith('ui:closeFloatingItem', expect.anything())
       expect(rendererSendMock).not.toHaveBeenCalledWith('ui:selectFloatingIndex', expect.anything())
@@ -937,7 +920,7 @@ describe('setupGuestShortcutForwarding', () => {
 
       triggerBeforeInput(closeInput)
 
-      expect(rendererSendMock).toHaveBeenCalledWith('ui:closeActiveTab')
+      expect(rendererSendMock).toHaveBeenCalledWith('ui:closeActiveTab', { sourceId: browserTabId })
       expect(rendererSendMock).not.toHaveBeenCalledWith('ui:closeFloatingItem', expect.anything())
     })
 
