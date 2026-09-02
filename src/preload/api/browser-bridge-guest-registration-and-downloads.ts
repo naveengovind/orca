@@ -6,6 +6,7 @@ import type {
 } from '../../shared/browser-webauthn-account'
 import { readBrowserClientHostIdArgument } from '../../shared/browser-client-host-id-argument'
 import { browserClientPageRendererRequests } from '../preload-runtime-support'
+import type { PreloadApi } from '../api-types'
 
 export const browserGuestRegistrationAndDownloadsApi = {
   onClientPageRendererRequest: browserClientPageRendererRequests.subscribe,
@@ -198,4 +199,4 @@ export const browserGuestRegistrationAndDownloadsApi = {
     ipcRenderer.on('browser:download-finished', listener)
     return () => ipcRenderer.removeListener('browser:download-finished', listener)
   }
-}
+} satisfies Partial<PreloadApi['browser']>
