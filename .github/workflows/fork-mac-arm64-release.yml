@@ -62,6 +62,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Why: build:desktop now bundles the mobile web app, and that bundle
+      # resolves React Native and Expo from mobile/node_modules. mobile/ is its
+      # own pnpm project, so the root install leaves it empty.
+      - uses: ./.github/actions/install-mobile-dependencies
+
       # Fork channel: unsigned build, versioned as a prerelease so the in-app
       # updater treats it as newer than the last, published to this repo with
       # the fork's update feed baked in.
