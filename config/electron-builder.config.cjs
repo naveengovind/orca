@@ -556,14 +556,17 @@ module.exports = {
         to: 'MacOS/orca-keyboard-layout'
       }
     ],
+    // Fork releases are arm64-only. The shared list also builds x64, which
+    // fails on the fork runner because that install does not include the
+    // Intel native modules.
     target: [
       {
         target: 'dmg',
-        arch: ['x64', 'arm64']
+        arch: isForkChannel ? ['arm64'] : ['x64', 'arm64']
       },
       {
         target: 'zip',
-        arch: ['x64', 'arm64']
+        arch: isForkChannel ? ['arm64'] : ['x64', 'arm64']
       }
     ]
   },
