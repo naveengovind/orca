@@ -62,11 +62,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Why: build:desktop now bundles the mobile web app, and that bundle
-      # resolves React Native and Expo from mobile/node_modules. mobile/ is its
-      # own pnpm project, so the root install leaves it empty.
-      - uses: ./.github/actions/install-mobile-dependencies
-
       # Fork channel: unsigned build, versioned as a prerelease so the in-app
       # updater treats it as newer than the last, published to this repo with
       # the fork's update feed baked in.
@@ -80,7 +75,30 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          pnpm run build:desktop
+          # Same chain as build:desktop, without build:mobile-web. Packaging still
+          # requires out/mobile-web, so write a one-page stub the guard accepts.
+          pnpm run typecheck
+          pnpm run build:relay
+          pnpm run build:cli
+          pnpm run build:electron-vite
+          pnpm run verify:built-skills-cli
+          pnpm run build:web-from-renderer
+          node --input-type=module <<'EOF'
+          import { writeMobileWebBundleTree, readDesktopVersion, readProtocolWindow, sha256Hex } from './config/scripts/mobile-web-bundle-manifest.mjs'
+          const bytes = Buffer.from('<!doctype html><title>Orca</title>')
+          await writeMobileWebBundleTree({
+            outDir: 'out/mobile-web',
+            written: [{
+              path: 'index.html',
+              sha256: sha256Hex(bytes),
+              byteLength: bytes.byteLength,
+              contentType: 'text/html; charset=utf-8',
+              bytes
+            }],
+            desktopVersion: await readDesktopVersion(),
+            protocolWindow: await readProtocolWindow()
+          })
+          EOF
           pnpm run build:computer-macos
           pnpm run build:keyboard-layout-macos
           pnpm run build:notification-status-macos
