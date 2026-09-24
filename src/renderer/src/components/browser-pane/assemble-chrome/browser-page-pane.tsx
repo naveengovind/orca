@@ -287,7 +287,9 @@ export function BrowserPagePane({
   })
   useBrowserPageKeyboardShortcuts({
     browserTabId: browserTab.id,
+    workspaceId,
     isActive,
+    chromeShortcutScope,
     isActiveRef,
     markupIsActive: markup.isActive,
     webviewRef,

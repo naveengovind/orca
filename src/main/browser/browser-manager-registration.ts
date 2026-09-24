@@ -1,7 +1,6 @@
 import { webContents } from 'electron'
 import { browserDownloadDestinationReservations } from './browser-download-destination'
 import { isWorkspaceDocPageId } from './doc-preview-guest-policy'
-import type { BrowserSessionUserAgentMode } from '../../shared/browser-workspace-types'
 import type { BrowserGuestRegistration } from './browser-manager-types'
 import { BrowserManagerGuestPolicy } from './browser-manager-guest-policy'
 
@@ -12,7 +11,6 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
     workspaceId,
     worktreeId,
     sessionProfileId,
-    userAgentMode,
     chromeless,
     webContentsId,
     rendererWebContentsId
@@ -58,11 +56,6 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
       this.workspaceIdByPageId.set(browserTabId, workspaceId)
     }
     this.sessionProfileIdByPageId.set(browserTabId, sessionProfileId ?? null)
-    if (userAgentMode) {
-      this.userAgentModeByPageId.set(browserTabId, userAgentMode)
-    } else {
-      this.userAgentModeByPageId.delete(browserTabId)
-    }
     if (chromeless) {
       this.chromelessByPageId.add(browserTabId)
     } else {
@@ -95,7 +88,10 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
     }
   }
 
-  unregisterGuest(browserTabId: string): void {
+  unregisterGuest(
+    browserTabId: string,
+    reason: 'page-closed' | 'guest-destroyed' = 'page-closed'
+  ): void {
     // Why the check on the exit door too: a document page withdraws by revoking its grant, never
     // through here, so its id arriving is misaddressed — and the cancel below would evict that
     // preview's live grab on the strength of it.
@@ -131,10 +127,14 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
       mouseWheelZoomCleanup()
       this.mouseWheelZoomCleanupByTabId.delete(browserTabId)
     }
-    // Why: downloads are per-tab chrome; closing the tab must cancel active writes, not orphan them.
+    let hasActiveDownloads = false
     for (const [downloadId, download] of this.downloadsById.entries()) {
       if (download.browserTabId === browserTabId && !download.terminalEvent) {
-        this.cancelDownloadInternal(downloadId, 'Tab closed before download completed.')
+        if (reason === 'page-closed') {
+          this.cancelDownloadInternal(downloadId, 'Tab closed before download completed.')
+        } else {
+          hasActiveDownloads = true
+        }
       }
     }
     const wcId = this.webContentsIdByTabId.get(browserTabId)
@@ -142,10 +142,12 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
       this.tabIdByWebContentsId.delete(wcId)
     }
     this.webContentsIdByTabId.delete(browserTabId)
-    this.rendererWebContentsIdByTabId.delete(browserTabId)
+    // A destroyed guest can recover in an open page while its downloads still report progress.
+    if (!hasActiveDownloads) {
+      this.rendererWebContentsIdByTabId.delete(browserTabId)
+    }
     this.workspaceIdByPageId.delete(browserTabId)
     this.sessionProfileIdByPageId.delete(browserTabId)
-    this.userAgentModeByPageId.delete(browserTabId)
     this.chromelessByPageId.delete(browserTabId)
     this.worktreeIdByTabId.delete(browserTabId)
     // Why: drop the viewport-op chain so the Map doesn't retain a promise keyed to a destroyed guest.
@@ -164,13 +166,11 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
     browserPageId,
     worktreeId,
     sessionProfileId,
-    userAgentMode,
     webContentsId
   }: {
     browserPageId: string
     worktreeId?: string
     sessionProfileId?: string | null
-    userAgentMode?: BrowserSessionUserAgentMode
     webContentsId: number
   }): boolean {
     // Why the same check on both registration doors: one id resolving in both halves is the exact
@@ -194,11 +194,6 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
     this.webContentsIdByTabId.set(browserPageId, webContentsId)
     this.tabIdByWebContentsId.set(webContentsId, browserPageId)
     this.sessionProfileIdByPageId.set(browserPageId, sessionProfileId ?? null)
-    if (userAgentMode) {
-      this.userAgentModeByPageId.set(browserPageId, userAgentMode)
-    } else {
-      this.userAgentModeByPageId.delete(browserPageId)
-    }
     if (worktreeId) {
       this.worktreeIdByTabId.set(browserPageId, worktreeId)
     }
@@ -223,13 +218,11 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
       cleanup()
     }
     this.policyCleanupByGuestId.clear()
-    this.clickedLinkFrameNameByGuestId.clear()
     this.tabIdByWebContentsId.clear()
     this.popupOwnerContextByGuestId.clear()
     this.pageInitiatedTabBudgetByRootGuestId.clear()
     this.worktreeIdByTabId.clear()
     this.sessionProfileIdByPageId.clear()
-    this.userAgentModeByPageId.clear()
     this.chromelessByPageId.clear()
     this.viewportUaOverrideMobileByTabId.clear()
     this.viewportPresetActiveByTabId.clear()

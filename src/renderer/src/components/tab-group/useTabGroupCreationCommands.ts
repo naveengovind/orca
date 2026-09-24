@@ -60,7 +60,7 @@ export function useTabGroupCreationCommands({
       const terminal = createTab(worktreeId, newGroupId)
       recordTerminalTabGroupSplit(terminal)
       setActiveTab(terminal.id)
-      setActiveTabType('terminal')
+      setActiveTabType('terminal', worktreeId)
     },
     [
       createEmptySplitGroup,
@@ -177,7 +177,7 @@ export function useTabGroupCreationCommands({
         }
         const terminal = createTab(worktreeId, groupId, shellOverride)
         setActiveTab(terminal.id)
-        setActiveTabType('terminal')
+        setActiveTabType('terminal', worktreeId)
         focusTerminalTabSurface(terminal.id)
       })()
     }

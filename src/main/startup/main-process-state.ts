@@ -5,6 +5,7 @@ import type { StatsCollector } from '../stats/collector'
 import type { ClaudeUsageStore } from '../claude-usage/store'
 import type { CodexUsageStore } from '../codex-usage/store'
 import type { OpenCodeUsageStore } from '../opencode-usage/store'
+import type { MuseUsageStore } from '../muse-usage/store'
 import type { CodexAccountService } from '../codex-accounts/service'
 import type { CodexRuntimeHomeService } from '../codex-accounts/runtime-home-service'
 import type { ClaudeAccountService } from '../claude-accounts/service'
@@ -13,6 +14,7 @@ import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import type { RateLimitService } from '../rate-limits/service'
 import type { OrcaRuntimeRpcServer } from '../runtime/runtime-rpc'
 import type { DesktopRelayService } from '../runtime/relay/desktop-relay-service'
+import type { DesktopPushService } from '../runtime/push/desktop-push-service'
 import type { StarNagService } from '../star-nag/service'
 import type { AgentAwakeService } from '../agent-awake-service'
 import type { CrashReportStore } from '../crash-reporting/crash-report-store'
@@ -24,7 +26,6 @@ import type { PluginMarketplaceInstaller } from '../plugins/plugin-marketplace-i
 import type { KeybindingService } from '../keybindings/keybinding-service'
 import type { RelayBrokerStatus } from '../runtime/relay/relay-session-broker'
 import type { AgentBrowserBridge } from '../browser/agent-browser-bridge'
-import type { AgentHookProviderSessionIdentity } from '../agent-hooks/server'
 import type { EmulatorBridge } from '../emulator/emulator-bridge'
 import type { GpuFallbackMarker, GpuFallbackEnvironment } from './gpu-fallback-marker'
 import type { createCodexSessionMigrationScheduler } from '../codex/codex-session-migration-scheduler'
@@ -55,6 +56,8 @@ export const mainProcessState = {
   claudeUsage: null as ClaudeUsageStore | null,
   codexUsage: null as CodexUsageStore | null,
   openCodeUsage: null as OpenCodeUsageStore | null,
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: widens the null slot to the store type assigned by main-process-observers.
+  museUsage: null as MuseUsageStore | null,
   codexAccounts: null as CodexAccountService | null,
   codexRuntimeHome: null as CodexRuntimeHomeService | null,
   codexSessionMigration: null as ReturnType<typeof createCodexSessionMigrationScheduler> | null,
@@ -65,7 +68,9 @@ export const mainProcessState = {
   runtimeRpc: null as OrcaRuntimeRpcServer | null,
   serveReadinessPublisher: new ServeReadinessPublisher(),
   desktopRelayService: null as DesktopRelayService | null,
+  desktopPushService: null as DesktopPushService | null,
   desktopRelayStatus: 'offline' as RelayBrokerStatus,
+  desktopRelayCellUrl: undefined as string | undefined,
   pendingUnpairedDeviceAuthFailure: false,
   // Why: gates whether headless serve installs the offscreen browser backend (and advertises browser pane support).
   headlessBrowserDisplayAvailable: false,
@@ -75,9 +80,6 @@ export const mainProcessState = {
   repoMaintenanceShutdown: Promise.resolve() as Promise<void>,
   crashReports: null as CrashReportStore | null,
   unsubscribeAgentAwakeStatusChanges: null as (() => void) | null,
-  publishProviderSessionChanges: null as
-    | ((identities: AgentHookProviderSessionIdentity[]) => void)
-    | null,
   unsubscribeSystemResumeBroadcast: null as (() => void) | null,
   watcherShutdownPromise: null as Promise<void> | null,
   watcherShutdownDone: false,
@@ -100,6 +102,13 @@ export const mainProcessState = {
   // Electron with no error. Only the renderer's own pull proves the listener is live.
   markdownFileOpenListenerReady: false,
   firstWindowStartupServicesReady: Promise.resolve(),
+  // Why published: the default-session proxy must be applied before the first app-owned fetcher,
+  // but window creation has no reason to queue behind it (the request guard already fences it).
+  initialProxyApplicationReady: Promise.resolve(),
+  // Why published: i18n/menu init no longer precedes the launch phase, so the one launch-phase
+  // path that reads a translated string (the runtime-RPC startup failure dialog) waits on this.
+  // Never rejects: the phase's own failure is surfaced by initializeMainProcessReady.
+  mainProcessI18nReady: Promise.resolve(),
   managedWslCliReconciliationReady: Promise.resolve(),
   managedWslCliStartupBarrierReady: Promise.resolve(),
   // Why: the serve barrier fails open, so this state tells headless clients a WSL PTY launch may still race an un-migrated registration ('settled' = off-Windows no-op).

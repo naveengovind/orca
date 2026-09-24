@@ -137,7 +137,8 @@ export function useBrowserPageWebviewLifecycle({
   const createBrowserTab = useAppStore((s) => s.createBrowserTab)
   const isPaintableRef = useRef(isPaintable)
   const chromelessRef = useRef(chromeless)
-  const annotationViewportBridgeTokenRef = useRef(createBrowserUuid().replaceAll('-', ''))
+  const annotationViewportBridgeTokenRef = useRef<string>(undefined!)
+  annotationViewportBridgeTokenRef.current ??= createBrowserUuid().replaceAll('-', '')
   const isActiveRef = useRef(isActive)
   const pendingAnnotationPayloadRef = useRef(pendingAnnotationPayload)
   const browserAnnotations = useAppStore(

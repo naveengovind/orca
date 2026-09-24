@@ -1,3 +1,4 @@
+import { clearWorktreeSleepIntent } from '@/lib/worktree-sleep-intent'
 import type { TerminalTab } from '../../../../shared/terminal-tab-types'
 import { isValidHostTerminalTabId } from '../../../../shared/terminal-tab-id'
 import { emptyLayoutSnapshot, singlePaneLayoutSnapshot } from '../slices/terminal-helpers'
@@ -242,7 +243,11 @@ export function createTerminalTabCreationActions(
             ...s.layoutByWorktree,
             [worktreeId]: s.layoutByWorktree[worktreeId] ?? { type: 'leaf', groupId: group.id }
           },
-          activeTabId: shouldActivate ? tab.id : orphanCleanupPatch.activeTabId,
+          // Why: the global selection is the main window's; a tab in another worktree (or the floating workspace) activates only within its own group.
+          activeTabId:
+            shouldActivate && s.activeWorktreeId === worktreeId
+              ? tab.id
+              : orphanCleanupPatch.activeTabId,
           activeTabIdByWorktree: {
             ...orphanCleanupPatch.activeTabIdByWorktree,
             [worktreeId]: nextActiveTabIdForWorktree
@@ -271,6 +276,10 @@ export function createTerminalTabCreationActions(
           }
         }
       })
+      if (options?.initialPtyId) {
+        // Why: a tab born with a live PTY (CLI/runtime create) wakes the workspace like any other bind.
+        clearWorktreeSleepIntent(worktreeId)
+      }
       const shouldRecordInteraction =
         options?.recordInteraction ?? (!options?.pendingActivationSpawn && !options?.initialPtyId)
       if (shouldRecordInteraction) {
