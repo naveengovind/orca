@@ -44,6 +44,7 @@ const GLOBAL_FORCE_PREFIXES = [
 const GLOBAL_FORCE_FILES = new Set(['package.json', 'pnpm-lock.yaml'])
 
 const GIT_COMPAT_PREFIXES = [
+  '.github/actions/prepare-git-compatibility/',
   'src/shared/git-',
   'src/shared/review-head-tracking-ref',
   'src/main/git/',
@@ -272,6 +273,7 @@ const WINDOWS_PACKAGE_TESTS = [
   'src/main/windows/windows-host-job.win32.test.ts',
   'src/main/windows/windows-process-tree-command-line-patch.test.ts',
   'src/main/windows/windows-process-table-native-addon.win32.test.ts',
+  'src/main/persistence/profile-state/profile-state-access-windows-native.win32.test.ts',
   'src/main/windows-live-tree-kill.win32.test.ts',
   'src/main/wsl/wsl-runner.test.ts',
   'src/main/wsl/wsl-guest-environment.test.ts',
