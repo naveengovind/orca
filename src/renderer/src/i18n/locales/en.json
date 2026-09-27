@@ -3399,6 +3399,9 @@
           "TerminalQuickCommandsSubmenu": {
             "3ccc7981bb": "Host unavailable",
             "54f29b7c0d": "Loading host…"
+          },
+          "TerminalRestoringPlaceholder": {
+            "restoring": "Restoring terminal…"
           }
         }
       },
