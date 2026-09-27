@@ -42,6 +42,7 @@ const EXT_TO_LANGUAGE: Record<string, string> = {
   // Why: Monaco declares Liquid as both '.liquid' and '.html.liquid'; the final-extension
   // lookup below covers the compound form, so the single entry is enough.
   '.liquid': 'liquid',
+  '.twig': 'twig',
   '.xml': 'xml',
   '.svg': 'xml',
   '.py': 'python',
@@ -92,6 +93,8 @@ const EXT_TO_LANGUAGE: Record<string, string> = {
   '.hrl': 'erlang',
   '.hs': 'haskell',
   '.clj': 'clojure',
+  // Why: Monaco registers Solidity under the id 'sol'; 'solidity' is only an alias.
+  '.sol': 'sol',
   '.vue': 'vue',
   '.svelte': 'svelte',
   '.astro': 'astro',
@@ -102,6 +105,7 @@ const EXT_TO_LANGUAGE: Record<string, string> = {
   '.nim': 'nim',
   '.nims': 'nim',
   '.nimble': 'nim',
+  '.typ': 'typst',
   '.tf': 'hcl',
   '.hcl': 'hcl',
   '.abap': 'abap',
