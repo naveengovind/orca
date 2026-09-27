@@ -41,7 +41,7 @@ describe('CI background step barriers', () => {
             expect(pending.delete(id), `missing background step ${id}`).toBe(true)
           }
         }
-        expect(pending.size).toBeLessThanOrEqual(3)
+        expect(pending.size).toBeLessThanOrEqual(job === pr.jobs.package ? 4 : 3)
       }
       expect([...pending]).toEqual([])
     }
@@ -106,8 +106,15 @@ describe('CI background step barriers', () => {
 
   it('joins package setup before reading outputs and preserves isolated native probes', () => {
     const steps = pr.jobs.package.steps
+    // Parallel composites must not race to download their shared cache action on first use.
+    const cacheAction = steps.findIndex((step) => step.uses === 'actions/cache@v5')
+    expect(cacheAction).toBeGreaterThanOrEqual(0)
+    expect(cacheAction).toBeLessThan(
+      steps.findIndex((step) => step.id === 'shutdown-fixture-cache')
+    )
     for (const [id, consumer] of [
       ['linux-package-tools', 'Package unpacked app'],
+      ['web-client', 'Package unpacked app'],
       ['shutdown-fixture-cache', 'Verify headless serve signal shutdown'],
       ['cli-fixture-cache', 'Verify Linux CLI launch contract']
     ]) {
