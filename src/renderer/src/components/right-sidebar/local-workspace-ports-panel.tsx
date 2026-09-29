@@ -31,6 +31,7 @@ export function LocalWorkspacePortsPanel({ isVisible }: { isVisible: boolean }):
   const activeWorktree = useActiveWorktree()
   const activeRepo = useRepoById(activeWorktree?.repoId ?? null)
   const settings = useAppStore((s) => s.settings)
+  const preferLocalBrowser = useAppStore((s) => s.browserPreferLocalRendering)
   const createBrowserTab = useAppStore((s) => s.createBrowserTab)
   const setRemoteBrowserPageHandle = useAppStore((s) => s.setRemoteBrowserPageHandle)
   const scansByKey = useAppStore((s) => s.workspacePortScansByKey)
@@ -154,7 +155,7 @@ export function LocalWorkspacePortsPanel({ isVisible }: { isVisible: boolean }):
           event,
           isMac: navigator.userAgent.includes('Mac')
         }),
-        preferLocalBrowser: settings.browserPreferLocalRendering === true,
+        preferLocalBrowser,
         localhostLabelRoute: resolveLocalhostLabelRouteForPort(useAppStore.getState(), port)
       })
       if (!result.ok) {
@@ -167,7 +168,14 @@ export function LocalWorkspacePortsPanel({ isVisible }: { isVisible: boolean }):
         )
       }
     },
-    [activeWorktree?.id, createBrowserTab, runtimeTarget, setRemoteBrowserPageHandle, settings]
+    [
+      activeWorktree?.id,
+      createBrowserTab,
+      preferLocalBrowser,
+      runtimeTarget,
+      setRemoteBrowserPageHandle,
+      settings
+    ]
   )
 
   const { activePorts, otherWorkspacePorts, externalPorts } = useMemo(

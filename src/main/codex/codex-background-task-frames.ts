@@ -7,8 +7,12 @@ import {
 import { codexChildTurnState } from './codex-subagent-executions'
 import { readRecord } from './codex-item-field-readers'
 import { readCodexThreadItem } from './codex-structured-item-translation'
-import { readCodexProviderVerdict } from './codex-structured-journal-provider-verdicts'
 import { readCodexTurnId } from './codex-structured-thread-facts'
+
+/** An `error` Codex will not retry is that child turn's end. A retryable stream error is not. */
+function childTurnFailedOnError(method: string, params: unknown): boolean {
+  return method === 'error' && readRecord(params).willRetry !== true
+}
 
 export type CodexBackgroundTaskFrame =
   | {
@@ -51,7 +55,7 @@ export type CodexBackgroundTaskEvent = {
 function readCodexChildTurnEnding(
   event: CodexBackgroundTaskEvent
 ): CodexBackgroundTaskFrame | null {
-  if (readCodexProviderVerdict(event.method, event.params) === 'turn-failed') {
+  if (childTurnFailedOnError(event.method, event.params)) {
     const turnId = readCodexTurnId(event.params)
     return { kind: 'turn-ended', threadId: event.threadId, turnId, state: 'failed' }
   }

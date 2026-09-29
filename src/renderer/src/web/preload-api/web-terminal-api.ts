@@ -201,7 +201,7 @@ export function createSshApi(): NonNullable<Partial<PreloadApi>['ssh']> {
       return entry
     },
     listPortForwards: async (args) => {
-      if (!requireActiveEnvironmentOrNull()) {
+      if (!requireActiveEnvironmentOrNull() || !args?.targetId) {
         return []
       }
       const { forwards } = await callRuntimeResult<{ forwards: PortForwardEntry[] }>(

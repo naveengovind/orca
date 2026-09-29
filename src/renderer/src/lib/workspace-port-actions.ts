@@ -141,11 +141,20 @@ export async function openWorkspacePortInBrowser(args: {
   // Why: the browser tab opened below is this jump's surface; seeding a shell would add a
   // PTY the user never asked for in a workspace whose last terminal they closed.
   activateAndRevealWorktree(worktreeId, { providesInitialSurface: true })
+  const runtimeTarget = args.runtimeTarget
   if (
-    args.runtimeTarget.kind === 'environment' &&
+    runtimeTarget.kind === 'environment' &&
     (args.preferLocalBrowser || isPairedWebClientWindow())
   ) {
-    return openPublishedRuntimePort(args, worktreeId)
+    return openPublishedRuntimePort(
+      {
+        port: args.port,
+        runtimeTarget,
+        createBrowserTab: args.createBrowserTab,
+        openInOrcaBrowser: args.openInOrcaBrowser
+      },
+      worktreeId
+    )
   }
   if (args.runtimeTarget.kind === 'environment') {
     try {
