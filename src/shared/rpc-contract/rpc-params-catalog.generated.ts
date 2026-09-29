@@ -461,7 +461,12 @@ import {
   DictationStart,
   SpeechModelAction
 } from './speech-params'
-import { SshTarget } from './ssh-params'
+import {
+  SshPortForwardCreate,
+  SshPortForwardRemove,
+  SshPortForwardUpdate,
+  SshTarget
+} from './ssh-params'
 import {
   AttachParams,
   CancelParams,
@@ -517,7 +522,11 @@ import {
   TerminalUpdateViewport
 } from './terminal-viewport-schemas-params'
 import { UpdaterCheckParams } from './updater-params'
-import { WorkspacePortKillParams, WorkspacePortScanParams } from './workspace-ports-params'
+import {
+  WorkspacePortKillParams,
+  WorkspacePortPublishParams,
+  WorkspacePortScanParams
+} from './workspace-ports-params'
 import { WorktreeCreate, WorktreePrefetchCreateBase } from './worktree-create-params'
 import {
   WorktreeActivate,
@@ -1110,11 +1119,16 @@ export const RPC_PARAMS_BY_METHOD = {
   'speech.models.delete': SpeechModelAction,
   'speech.models.download': SpeechModelAction,
   'speech.models.list': null,
+  'ssh.addPortForward': SshPortForwardCreate,
   'ssh.connect': SshTarget,
   'ssh.getState': SshTarget,
+  'ssh.listDetectedPorts': SshTarget,
+  'ssh.listPortForwards': SshTarget,
   'ssh.listRemovedTargetLabels': null,
   'ssh.listTargetSummaries': null,
   'ssh.listTargets': null,
+  'ssh.removePortForward': SshPortForwardRemove,
+  'ssh.updatePortForward': SshPortForwardUpdate,
   'stats.summary': null,
   'status.get': null,
   'terminal.adoptOrphans': TerminalAdoptOrphans,
@@ -1161,6 +1175,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.getStatus': null,
   'updater.install': null,
   'workspacePorts.kill': WorkspacePortKillParams,
+  'workspacePorts.publish': WorkspacePortPublishParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,
   'worktree.create': WorktreeCreate,

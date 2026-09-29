@@ -9,6 +9,7 @@ import {
 } from '@/lib/workspace-port-urls'
 import type { PortForwardEntry } from '../../../../shared/ssh-types'
 import { translate } from '@/i18n/i18n'
+import { syncSshPortForwards } from '@/lib/ssh-port-forward-sync'
 
 export function SshForwardedPortRow({
   entry,
@@ -27,13 +28,14 @@ export function SshForwardedPortRow({
     setRemoving(true)
     try {
       await window.api.ssh.removePortForward({ id: entry.id })
+      await syncSshPortForwards(entry.connectionId)
     } catch {
       // broadcast will update state
     }
     if (mountedRef.current) {
       setRemoving(false)
     }
-  }, [entry.id, mountedRef])
+  }, [entry.connectionId, entry.id, mountedRef])
 
   const handleCopy = useCallback(() => {
     void window.api.ui.writeClipboardText(forwardedAddress)

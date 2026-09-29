@@ -1,6 +1,11 @@
 import type { PreloadApi } from '../../../../preload/api-types'
 import { EMPTY_PTY_MAIN_DELIVERY_DIAGNOSTICS } from '../../../../shared/pty-delivery-diagnostics'
-import type { SshConnectionState, SshTarget } from '../../../../shared/ssh-types'
+import type {
+  DetectedPort,
+  PortForwardEntry,
+  SshConnectionState,
+  SshTarget
+} from '../../../../shared/ssh-types'
 import { translate } from '@/i18n/i18n'
 import { callRuntimeResult } from './web-runtime-calls'
 import { requireActiveEnvironmentOrNull } from './web-runtime-session'
@@ -166,13 +171,52 @@ export function createSshApi(): NonNullable<Partial<PreloadApi>['ssh']> {
         error: translate('auto.web.web.preload.api.31bfe8ae1a', 'Unavailable in the web client.')
       }),
     onStateChanged: () => noopUnsubscribe,
-    addPortForward: () =>
-      Promise.reject(new Error('SSH port forwarding is unavailable in the web client.')),
-    updatePortForward: () =>
-      Promise.reject(new Error('SSH port forwarding is unavailable in the web client.')),
-    removePortForward: () => Promise.resolve(null),
-    listPortForwards: () => Promise.resolve([]),
-    listDetectedPorts: () => Promise.resolve([]),
+    // Why: orca serve owns the SSH session the same way the desktop app does.
+    // Forwards are created there and republished on the address the browser already uses.
+    addPortForward: (args) =>
+      callRuntimeResult<PortForwardEntry>('ssh.addPortForward', {
+        targetId: args.targetId,
+        localPort: args.localPort,
+        remoteHost: args.remoteHost,
+        remotePort: args.remotePort,
+        label: args.label
+      }),
+    updatePortForward: (args) =>
+      callRuntimeResult<PortForwardEntry>('ssh.updatePortForward', {
+        id: args.id,
+        targetId: args.targetId,
+        localPort: args.localPort,
+        remoteHost: args.remoteHost,
+        remotePort: args.remotePort,
+        label: args.label
+      }),
+    removePortForward: async (args) => {
+      const { entry } = await callRuntimeResult<{ entry: PortForwardEntry | null }>(
+        'ssh.removePortForward',
+        { id: args.id }
+      )
+      return entry
+    },
+    listPortForwards: async (args) => {
+      if (!requireActiveEnvironmentOrNull()) {
+        return []
+      }
+      const { forwards } = await callRuntimeResult<{ forwards: PortForwardEntry[] }>(
+        'ssh.listPortForwards',
+        { targetId: args.targetId }
+      )
+      return forwards
+    },
+    listDetectedPorts: async (args) => {
+      if (!requireActiveEnvironmentOrNull()) {
+        return []
+      }
+      const { ports } = await callRuntimeResult<{ ports: DetectedPort[] }>(
+        'ssh.listDetectedPorts',
+        { targetId: args.targetId }
+      )
+      return ports
+    },
     onPortForwardsChanged: () => noopUnsubscribe,
     onDetectedPortsChanged: () => noopUnsubscribe,
     browseDir: () => Promise.resolve({ entries: [], resolvedPath: '', pathFlavor: 'posix' }),

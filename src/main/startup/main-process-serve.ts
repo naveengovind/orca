@@ -5,6 +5,7 @@ import { resolveAdvertisedPairingEndpoint } from '../runtime/pairing-endpoint'
 import { notifyServeSupervisorReady } from '../serve-update-handoff'
 import { mainProcessState as state } from './main-process-state'
 import { getServeOptions, type ServeOptions } from './serve-options'
+import { setServeAdvertisedHost } from './serve-advertised-host'
 
 export { getServeOptions, type ServeOptions }
 
@@ -50,6 +51,7 @@ export async function printServeReady(options: ServeOptions): Promise<void> {
       throw new Error(`--serve-project-root must be a directory: ${options.projectRoot}`)
     }
   }
+  setServeAdvertisedHost(options.pairingAddress)
   const boundEndpoint = runtimeRpc.getWebSocketEndpoint()
   const advertised = boundEndpoint
     ? resolveAdvertisedPairingEndpoint(boundEndpoint, options.pairingAddress)

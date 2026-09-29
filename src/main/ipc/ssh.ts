@@ -12,6 +12,7 @@ import type {
   SshAiVaultRelayTitleParams
 } from '../../shared/ssh-ai-vault-relay'
 import { SshPortForwardManager } from '../ssh/ssh-port-forward'
+import { setSshPortForwardRegistry } from '../ssh/ssh-port-forward-registry'
 import { isRuntimeOwnedSshTargetId } from '../../shared/execution-host'
 import { quitTeardownStartGate } from '../quit-teardown-start-gate'
 import {
@@ -195,6 +196,12 @@ export function registerSshHandlers(
     setConnectionManager(new SshConnectionManager(callbacks))
   }
   setPortForwardManager(portForwardManager ?? new SshPortForwardManager())
+  setSshPortForwardRegistry({
+    manager: portForwardManager!,
+    getConnection: (targetId) => connectionManager?.getConnection(targetId),
+    listDetected: (targetId) =>
+      activeSessions.get(targetId)?.getPortScanner()?.getDetectedPorts(targetId) ?? []
+  })
   portForwardManager!.setCallbacks({
     onForwardClosed: (entry, reason) => {
       if (reason.kind === 'unexpected-exit') {
@@ -257,6 +264,7 @@ export async function resetSshHandlerStateForTests(): Promise<void> {
   setConnectionManager(null)
   setSshConnectionManagerResolver(null)
   setPortForwardManager(null)
+  setSshPortForwardRegistry(null)
   setSshTargetRegistryStore(null)
   setPersistedStore(null)
   setSshTargetRegistryHandlers({ connect: null, getState: null })

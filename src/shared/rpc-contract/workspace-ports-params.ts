@@ -10,3 +10,8 @@ export const WorkspacePortKillParams = z.object({
   pid: requiredNumber('Missing process id'),
   port: requiredNumber('Missing port')
 })
+
+export const WorkspacePortPublishParams = z.object({
+  port: z.number().int().min(1).max(65535),
+  host: z.string().optional()
+})

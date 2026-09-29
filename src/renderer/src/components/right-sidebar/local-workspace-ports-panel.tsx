@@ -154,6 +154,7 @@ export function LocalWorkspacePortsPanel({ isVisible }: { isVisible: boolean }):
           event,
           isMac: navigator.userAgent.includes('Mac')
         }),
+        preferLocalBrowser: settings.browserPreferLocalRendering === true,
         localhostLabelRoute: resolveLocalhostLabelRouteForPort(useAppStore.getState(), port)
       })
       if (!result.ok) {

@@ -7,7 +7,19 @@ import {
 import { defineMethod } from '../core'
 import { getPublicSshError, getPublicSshState } from '../../public-ssh-state'
 import type { SshTargetSummary } from '../../../../shared/ssh-types'
-import { SshTarget } from '../../../../shared/rpc-contract/ssh-params'
+import {
+  SshPortForwardCreate,
+  SshPortForwardRemove,
+  SshPortForwardUpdate,
+  SshTarget
+} from '../../../../shared/rpc-contract/ssh-params'
+import {
+  addRegisteredPortForward,
+  listRegisteredDetectedPorts,
+  listRegisteredPortForwards,
+  removeRegisteredPortForward,
+  updateRegisteredPortForward
+} from '../../../ssh/ssh-port-forward-registry'
 
 // Why: `generation` stays optional on the wire — an old server simply omits it and its rows key on target id alone.
 function listRegisteredSshTargetSummaries(): SshTargetSummary[] {
@@ -61,5 +73,30 @@ export const SSH_METHODS = [
     name: 'ssh.listRemovedTargetLabels',
     params: null,
     handler: () => ({ labels: listRegisteredRemovedSshTargetLabels() })
+  }),
+  defineMethod({
+    name: 'ssh.addPortForward',
+    params: SshPortForwardCreate,
+    handler: (params) => addRegisteredPortForward(params)
+  }),
+  defineMethod({
+    name: 'ssh.updatePortForward',
+    params: SshPortForwardUpdate,
+    handler: (params) => updateRegisteredPortForward(params)
+  }),
+  defineMethod({
+    name: 'ssh.removePortForward',
+    params: SshPortForwardRemove,
+    handler: async (params) => ({ entry: await removeRegisteredPortForward(params.id) })
+  }),
+  defineMethod({
+    name: 'ssh.listPortForwards',
+    params: SshTarget,
+    handler: (params) => ({ forwards: listRegisteredPortForwards(params.targetId) })
+  }),
+  defineMethod({
+    name: 'ssh.listDetectedPorts',
+    params: SshTarget,
+    handler: (params) => ({ ports: listRegisteredDetectedPorts(params.targetId) })
   })
 ]

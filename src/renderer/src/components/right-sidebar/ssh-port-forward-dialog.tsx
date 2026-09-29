@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import type { PortForwardEntry } from '../../../../shared/ssh-types'
 import { translate } from '@/i18n/i18n'
+import { syncSshPortForwards } from '@/lib/ssh-port-forward-sync'
 
 // Why: ports < 1024 require root to bind on the local machine. Remap them
 // to a high port so the default "Forward" action doesn't fail with EACCES.
@@ -198,6 +199,7 @@ function PortForwardForm({
               remotePort: rPort,
               label: label || undefined
             }))
+        await syncSshPortForwards(targetId)
         onClose()
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)

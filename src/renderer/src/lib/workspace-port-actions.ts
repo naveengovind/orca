@@ -17,6 +17,8 @@ import { runWorkspacePortScanForTarget } from './workspace-port-scan-client'
 import { browserUrlForPort } from './workspace-port-urls'
 import { BROWSER_SCREENCAST_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
 import { RUNTIME_BROWSER_UNAVAILABLE_MESSAGE } from './client-creation-action-policy'
+import { isPairedWebClientWindow } from './desktop-window-chrome'
+import { openPublishedRuntimePort } from './open-published-runtime-port'
 
 export { addressForPort } from './workspace-port-urls'
 
@@ -106,6 +108,7 @@ export async function openWorkspacePortInBrowser(args: {
   createBrowserTab: BrowserTabCreator
   setRemoteBrowserPageHandle: RemoteBrowserPageHandleSetter
   openInOrcaBrowser?: boolean
+  preferLocalBrowser?: boolean
   localhostLabelRoute?: LocalhostWorktreeLabelRoute | null
 }): Promise<{ ok: true } | { ok: false; reason: string }> {
   if (!args.runtimeTarget) {
@@ -138,6 +141,12 @@ export async function openWorkspacePortInBrowser(args: {
   // Why: the browser tab opened below is this jump's surface; seeding a shell would add a
   // PTY the user never asked for in a workspace whose last terminal they closed.
   activateAndRevealWorktree(worktreeId, { providesInitialSurface: true })
+  if (
+    args.runtimeTarget.kind === 'environment' &&
+    (args.preferLocalBrowser || isPairedWebClientWindow())
+  ) {
+    return openPublishedRuntimePort(args, worktreeId)
+  }
   if (args.runtimeTarget.kind === 'environment') {
     try {
       await assertRuntimeEnvironmentCapability(

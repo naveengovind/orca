@@ -86,6 +86,14 @@ function advertisedProtocolForPort(port: AdvertisedPortUrlFields): 'http' | 'htt
 }
 
 export function browserUrlForPortForwardEntry(entry: PortForwardEntry): string {
+  // Why: orca serve republishes the forward on the address the browser used to
+  // reach the server. 127.0.0.1 would be the viewer's own machine.
+  if (entry.publishedHost && entry.publishedPort) {
+    const host =
+      typeof location !== 'undefined' && location.hostname ? location.hostname : entry.publishedHost
+    const printable = host.includes(':') ? `[${host}]` : host
+    return `http://${printable}:${entry.publishedPort}/`
+  }
   // Why: older enriched entries may have advertisedUrl without advertisedProtocol;
   // derive the URL once so the open action and labels do not drift.
   const protocol = advertisedProtocolForPort(entry)

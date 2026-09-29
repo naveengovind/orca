@@ -282,6 +282,9 @@ export type PortForwardEntry = {
   /** Protocol parsed from the advertised URL — used to upgrade HTTP guesses
    *  to HTTPS even when the advertised host can't be reused locally. */
   advertisedProtocol?: 'http' | 'https'
+  /** Set when orca serve republishes the loopback forward on its reachable address. */
+  publishedHost?: string
+  publishedPort?: number
 }
 
 /** A listening port detected on the remote host by the relay.
