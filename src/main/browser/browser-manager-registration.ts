@@ -47,7 +47,7 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
     const previousWebContentsId = this.webContentsIdByTabId.get(browserTabId)
     if (previousWebContentsId !== undefined && previousWebContentsId !== webContentsId) {
       this.retireStaleGuestWebContents(previousWebContentsId)
-      this.viewportPresetActiveByTabId.delete(browserTabId)
+      this.viewportPresetByTabId.delete(browserTabId)
       this.viewportScrollStateByTabId.delete(browserTabId)
     }
     this.webContentsIdByTabId.set(browserTabId, webContentsId)
@@ -152,8 +152,7 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
     this.worktreeIdByTabId.delete(browserTabId)
     // Why: drop the viewport-op chain so the Map doesn't retain a promise keyed to a destroyed guest.
     this.viewportOpsByTabId.delete(browserTabId)
-    this.viewportUaOverrideMobileByTabId.delete(browserTabId)
-    this.viewportPresetActiveByTabId.delete(browserTabId)
+    this.viewportPresetByTabId.delete(browserTabId)
     this.viewportScrollStateByTabId.delete(browserTabId)
     if (wcId !== undefined) {
       this.pendingNavigationByGuestId.delete(wcId)
@@ -188,7 +187,7 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
     const previousWebContentsId = this.webContentsIdByTabId.get(browserPageId)
     if (previousWebContentsId !== undefined && previousWebContentsId !== webContentsId) {
       this.retireStaleGuestWebContents(previousWebContentsId)
-      this.viewportPresetActiveByTabId.delete(browserPageId)
+      this.viewportPresetByTabId.delete(browserPageId)
       this.viewportScrollStateByTabId.delete(browserPageId)
     }
     this.webContentsIdByTabId.set(browserPageId, webContentsId)
@@ -224,10 +223,9 @@ export abstract class BrowserManagerRegistration extends BrowserManagerGuestPoli
     this.worktreeIdByTabId.clear()
     this.sessionProfileIdByPageId.clear()
     this.chromelessByPageId.clear()
-    this.viewportUaOverrideMobileByTabId.clear()
-    this.viewportPresetActiveByTabId.clear()
+    this.viewportPresetByTabId.clear()
     this.viewportScrollStateByTabId.clear()
-    this.authUserAgentOverrideStateByGuestId.clear()
+    this.cdpUserAgentOverrideStateByGuestId.clear()
     this.pendingNavigationByGuestId.clear()
     this.pendingLoadFailuresByGuestId.clear()
     this.loadErrorsByGuestId.clear()
